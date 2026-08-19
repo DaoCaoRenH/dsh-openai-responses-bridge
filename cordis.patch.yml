@@ -1,0 +1,6 @@
+# The bridge is dormant until the user settings section declares one or more
+# provider routes. The host bundle also registers its embedded sandbox schema
+# compatibility layer; it contains no secrets or deployment-specific endpoints.
+- insert:
+    - id: llm-openai-responses-bridge
+      name: dsh-openai-responses-bridge
