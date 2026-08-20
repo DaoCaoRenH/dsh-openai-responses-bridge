@@ -1,10 +1,10 @@
 /** Browser half of the independent OpenAI third-party-model settings plugin. */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
-import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-web-react'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import { bindSnapshotSelector } from './bind.ts'
 import { BridgeSection } from './BridgeSection.tsx'
 import type { BridgeSectionInjected } from './BridgeSection.tsx'
 import { registerHostedWebSearchConversationNode } from './HostedWebSearchNode.tsx'

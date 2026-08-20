@@ -18,6 +18,7 @@ describe('built DSH Client bundle composition', () => {
     expect(packageJson.exports?.['./client']?.default).toBe('./lib/client.js')
 
     const source = await readFile(resolve('lib/client.js'), 'utf8')
+    expect(source).not.toContain('@deepseek-ai/dsh-client-web-react')
     let loaded: LoadedBundle | undefined
     const previousWindow = (globalThis as { window?: unknown }).window
     ;(globalThis as { window?: unknown }).window = {
@@ -31,9 +32,6 @@ describe('built DSH Client bundle composition', () => {
     }
     expect(loaded?.id).toBe('dsh-openai-responses-bridge')
     const exported = loaded!.factory((id: string) => {
-      if (id === '@deepseek-ai/dsh-client-web-react') return {
-        bindSnapshotSelector: (source: { getSnapshot: () => unknown }) => (selector: (value: unknown) => unknown) => selector(source.getSnapshot()),
-      }
       if (id === '@deepseek-ai/dsh-client-runtime/client') return {
         createSnapshotStore: <T>(initial: T) => ({
           getSnapshot: () => initial,
