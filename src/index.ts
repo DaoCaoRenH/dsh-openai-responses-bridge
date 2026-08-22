@@ -5,6 +5,8 @@ import type { AdapterRegistrationHandle } from '@deepseek-ai/dsh-llm'
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
 import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai'
 import { deepEqualJson, installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { credentialRef, isCredentialRefName } from '@deepseek-ai/dsh-credentials'
+import type { AuthContext, CredentialStore } from '@earendil-works/pi-ai'
 import { Config, assertServiceable } from './config.ts'
 import { discoverModels } from './discovery.ts'
 import { currentInitiatorSession, registerHostedWebSearchSessionEvents } from './hosted-web-search/session.ts'
@@ -25,6 +27,33 @@ export type * from './types.ts'
 
 function registrationFacts(profiles: ReadonlyMap<string, { displayName: string; retryPolicy: unknown }>): string {
   return JSON.stringify([...profiles].map(([provider, profile]) => ({ provider, displayName: profile.displayName, retryPolicy: profile.retryPolicy })))
+}
+
+/**
+ * Pi requires an auth store when it builds a model collection. Bridge routes
+ * authenticate through their explicit apiKeyEnv reference instead, so this
+ * store deliberately has no login persistence; authContext still exposes DSH
+ * credentials to provider-native ambient lookups such as Google ADC names.
+ */
+function bridgeAuth(ctx: Context): { credentials: CredentialStore; authContext: AuthContext } {
+  return {
+    credentials: {
+      read: async () => undefined,
+      list: async () => [],
+      modify: async (_provider, mutate) => mutate(undefined),
+      delete: async () => undefined,
+    },
+    authContext: {
+      env: async name => {
+        if (isCredentialRefName(name)) {
+          const value = await ctx.get('credentials')?.resolve(credentialRef(name))
+          if (value !== undefined) return value.value
+        }
+        return launchEnvironmentOf(ctx).get(name)?.value
+      },
+      fileExists: async () => false,
+    },
+  }
 }
 
 /** Install the route registry, settings namespace, and credential resolution hooks. */
@@ -76,6 +105,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
   const adapter = new PiAiAdapter({
     profiles,
     resolveApiKey,
+    auth: bridgeAuth(ctx),
     resolveAttachments: () => ctx.get('attachments'),
     onReplayDegrade: detail => ctx.logger.warn(`llm-openai-responses-bridge: replay degraded for ${detail.provider}/${detail.model}: ${detail.reason}`),
   })

@@ -116,7 +116,7 @@ policy, executor, or filesystem authority.
 
 ## Requirements
 
-- DeepSeek Harness APIs from `0.1.0-rc.7`;
+- DeepSeek Harness APIs from `0.1.1-rc.2`;
 - an upstream service implementing either OpenAI Responses or native Gemini
   `generateContent`;
 - Node.js `^22.19.0` or `>=24.0.0` and pnpm `>=10` when building from source.
@@ -244,7 +244,7 @@ key in `settings.yaml`, `.credentials.yaml`, source files, or static headers.
 | `file_search` | Requires non-empty `vector_store_ids`; the remote endpoint must support it. |
 | `code_interpreter` | Remote passthrough only; no local DSH executor or continuation. |
 | `mcp`, `tool_search`, `namespace` | Remote definitions may pass through; secrets in definitions are rejected. |
-| `image_generation` | Refused in the current DSH `rc.7` integration because no safe image output backend is available. |
+| `image_generation` | Refused in the current DSH `rc.2` integration because no safe image output backend is available. |
 | `computer`, `local_shell`, `shell`, `apply_patch`, `custom` | Refused because there is no DSH executor and approval continuation for these remote tools. |
 
 Hosted calls are remote calls. A remote code interpreter or MCP service does not

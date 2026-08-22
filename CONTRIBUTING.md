@@ -6,7 +6,7 @@ Thanks for helping improve `dsh-openai-responses-bridge`.
 
 - Node.js `^22.19.0` or `>=24.0.0`;
 - pnpm `>=10`;
-- a DeepSeek Harness `0.1.0-rc.7` development environment for integration work.
+- a DeepSeek Harness `0.1.1-rc.2` development environment for integration work.
 
 Install dependencies from the repository root:
 

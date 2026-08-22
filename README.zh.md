@@ -98,7 +98,7 @@ schema，并只从副本中移除 `sandbox_permissions` 和 `justification`。
 
 ## 前置条件
 
-- DeepSeek Harness `0.1.0-rc.7` 相关 API；
+- DeepSeek Harness `0.1.1-rc.2` 相关 API；
 - 上游服务实现 OpenAI Responses 或 Gemini 原生 `generateContent`；
 - 从源码构建时需要 Node.js `^22.19.0` 或 `>=24.0.0`，以及 pnpm `>=10`。
 
@@ -222,7 +222,7 @@ API 密钥应保存在 DSH credentials 或启动环境中。不要把密钥放�
 | `file_search` | 必须提供非空 `vector_store_ids`，且上游需要支持该工具。 |
 | `code_interpreter` | 仅远端透传，不提供本地 DSH executor 或 continuation。 |
 | `mcp`、`tool_search`、`namespace` | 可以透传远端 definition，但会拒绝 definition 中的 secret。 |
-| `image_generation` | 当前 DSH `rc.7` 没有安全的图片输出 backend，因此拒绝。 |
+| `image_generation` | 当前 DSH `rc.2` 没有安全的图片输出 backend，因此拒绝。 |
 | `computer`、`local_shell`、`shell`、`apply_patch`、`custom` | 没有 DSH executor 和审批 continuation，因此拒绝。 |
 
 Hosted call 永远是远端调用。远端 code interpreter 或 MCP 服务不会获得本地文件系统、

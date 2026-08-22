@@ -42,7 +42,7 @@ export function apply(ctx: ClientContext): void {
       ctx.remote.$on('settings/document-updated', (ns) => {
         if (ns === 'llm-openai-responses-bridge') refresh()
       }),
-      ctx.remote.$on('credentials/updated', refresh),
+      ctx.remote.$on('credentials/reference-updated', refresh),
       ctx.remote.$on('llm/adapters-updated', refresh),
       ctx.on('connection/reset', refresh),
     ]

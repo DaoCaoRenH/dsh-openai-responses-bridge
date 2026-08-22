@@ -26,6 +26,9 @@ import type { BridgeApiProtocol, BridgeConfig, BridgeModelProfile, BridgeProvide
 const DEFAULT_CONTEXT_WINDOW = 262_144
 const DEFAULT_MAX_TOKENS = 32_768
 const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
+const DEFAULT_MAX_REQUEST_IMAGE_BYTES = 20 * 1024 * 1024
+const DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET = 4 * 1024 * 1024
+const DEFAULT_REQUEST_IMAGE_MAX_BYTES = 1 * 1024 * 1024
 
 function apiKeyAuth(name: string): Provider['auth'] {
   return {
@@ -153,6 +156,9 @@ export function resolveProfiles(
       ...source.reasoning === undefined ? {} : { reasoning: source.reasoning },
       ...source.headers === undefined ? {} : { headers: { ...source.headers } },
       streamIdleTimeoutMs: source.streamIdleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+      maxRequestImageBytes: DEFAULT_MAX_REQUEST_IMAGE_BYTES,
+      requestImagePixelBudget: DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET,
+      requestImageMaxBytes: DEFAULT_REQUEST_IMAGE_MAX_BYTES,
       retryPolicy,
       piProvider: providerFor(route, source, api, models, source.hostedTools, resolveSession),
       configuredMaxTokens,
