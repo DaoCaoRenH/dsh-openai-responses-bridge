@@ -4,9 +4,10 @@
 
 Please do not open a public issue containing API keys, credential files, session
 transcripts, or exploit details. If GitHub private vulnerability reporting is
-enabled for this repository, use that channel. Otherwise contact the repository
-owner privately through GitHub with a minimal reproduction and the affected
-commit or version.
+enabled for this repository, use that channel. Otherwise contact `@DaoCaoRenH`
+through the GitHub profile at https://github.com/DaoCaoRenH with a minimal
+reproduction and the affected commit or version. Do not report vulnerabilities
+through public issues.
 
 ## Secret handling
 

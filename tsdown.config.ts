@@ -42,7 +42,9 @@ function cssModulesPlugin(id: string): Plugin {
         minify: true,
       })
       const classMap: Record<string, string> = {}
-      for (const [local, exported] of Object.entries(result.exports ?? {})) classMap[local] = exported.name
+      for (const [local, exported] of Object.entries(result.exports ?? {}).sort(([left], [right]) => left.localeCompare(right))) {
+        classMap[local] = exported.name
+      }
       const tagId = `${id}/${basename(file)}`
       return [
         `const css = ${JSON.stringify(result.code.toString())};`,
@@ -69,10 +71,12 @@ export default defineConfig([
     clean: true,
     format: ['esm'],
     platform: 'node',
-    external: [
-      /^@deepseek-ai\//,
-      /^@earendil-works\/pi-ai$/,
-    ],
+    deps: {
+      neverBundle: [
+        /^@deepseek-ai\//,
+        /^@earendil-works\/pi-ai$/,
+      ],
+    },
   },
   {
     name: 'dsh-openai-responses-bridge/client',
@@ -82,8 +86,10 @@ export default defineConfig([
     dts: false,
     format: ['cjs'],
     platform: 'browser',
-    external: PLATFORM_MODULES,
-    noExternal: (moduleId: string) => PLATFORM_MODULES.includes(moduleId) ? undefined : true,
+    deps: {
+      neverBundle: PLATFORM_MODULES,
+      alwaysBundle: (moduleId: string) => PLATFORM_MODULES.includes(moduleId) ? undefined : true,
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
       'import.meta.env.MODE': JSON.stringify(process.env.NODE_ENV ?? 'production'),
@@ -91,6 +97,7 @@ export default defineConfig([
     },
     plugins: [cssModulesPlugin('llm-openai-responses-bridge')],
     outputOptions: {
+      exports: 'named',
       entryFileNames: 'client.js',
       // client-modules keys the browser bundle by the loaded package entry
       // name. The Host settings namespace has a different technical identity

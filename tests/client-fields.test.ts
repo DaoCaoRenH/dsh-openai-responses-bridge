@@ -9,16 +9,16 @@ describe('Bridge settings card fields', () => {
   it('creates a safe route with hosted tools disabled and derives an internal credential reference', () => {
     const draft = {
       ...initialProviderDraft(),
-      route: 'nodus-bridge',
-      displayName: 'Nodus via Bridge',
-      baseURL: 'https://api.nodus.sbs/v1',
+      route: 'custom-bridge',
+      displayName: 'Custom Bridge',
+      baseURL: 'https://example.test/v1',
       apiKey: 'secret-value',
       models: [{ id: 'gpt-5.6-luna', contextWindow: 131072, maxTokens: 32768 }],
     }
     expect(validateProviderDraft(draft)).toBeUndefined()
     expect(providerProfileFromDraft(draft)).toMatchObject({
       api: 'openai-responses',
-      apiKeyEnv: deriveApiKeyRef('nodus-bridge'),
+      apiKeyEnv: deriveApiKeyRef('custom-bridge'),
       hostedTools: { enabled: false },
       models: [{
         id: 'gpt-5.6-luna',
@@ -98,7 +98,7 @@ describe('Bridge settings card fields', () => {
       ...initialProviderDraft(),
       route: 'google',
       api: 'google-generative-ai' as const,
-      baseURL: 'https://api.nodus.sbs/v1beta',
+      baseURL: 'https://example.test/v1beta',
       apiKey: 'secret',
       models: [{ id: 'gemini-3.6-flash', input: ['text', 'image'] as Array<'text' | 'image'> }],
       webSearch: true,
@@ -111,7 +111,7 @@ describe('Bridge settings card fields', () => {
     expect(providerDraftFromProfile('google', {
       api: 'google-generative-ai',
       apiKeyEnv: 'GOOGLE_KEY',
-      baseURL: 'https://api.nodus.sbs/v1beta',
+      baseURL: 'https://example.test/v1beta',
       models: [{ id: 'gemini-3.6-flash' }],
     })).toMatchObject({ api: 'google-generative-ai', webSearch: false })
     expect(webSearchOps('google', { api: 'google-generative-ai', apiKeyEnv: 'KEY', baseURL: 'https://example.test/v1beta', models: [{ id: 'm' }] }, true)).toEqual([

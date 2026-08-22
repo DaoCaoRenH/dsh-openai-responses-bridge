@@ -1,5 +1,8 @@
 # dsh-openai-responses-bridge
 
+[![CI](https://github.com/DaoCaoRenH/dsh-openai-responses-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/DaoCaoRenH/dsh-openai-responses-bridge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 dsh-openai-responses-bridge 是面向 Google Generative AI 和第三方 OpenAI
 Responses 兼容服务的 DeepSeek Harness 独立 bundle，DSH 插件身份为
 llm-openai-responses-bridge。
@@ -22,6 +25,21 @@ llm-openai-responses-bridge。
 插件安装时无需先在本地重新构建即可加载 bundle。浏览器 bundle 的生成 source
 map 已明确排除，不会进入仓库和发布包。
 
+## 公开发布状态
+
+| 项目 | 内容 |
+| --- | --- |
+| Package | `dsh-openai-responses-bridge` |
+| DSH 插件 ID | `llm-openai-responses-bridge` |
+| 目标 DSH API | `0.1.0-rc.7` |
+| 支持的安装来源 | GitHub checkout、release tag 或固定 commit |
+| 许可证 | MIT，见 [LICENSE](LICENSE) |
+
+当前版本是与 DSH API 版本绑定的 preview release。正式安装建议使用经过审查的
+GitHub tag 或 commit SHA；固定版本可以保证部署可复现。插件不会修改 DSH 宿主
+源码，提交到仓库的 `lib/` 是发布产物的一部分。添加凭据或提交问题前，请先阅读
+[SECURITY.md](SECURITY.md)。
+
 ## 前置条件
 
 - DeepSeek Harness 0.1.0-rc.7 相关公开 API；
@@ -41,9 +59,9 @@ map 已明确排除，不会进入仓库和发布包。
 开发检查见 [CONTRIBUTING.md](CONTRIBUTING.md)，密钥处理和漏洞报告见
 [SECURITY.md](SECURITY.md)。
 
-## Windows 安装
+## 安装
 
-先克隆仓库，再用隔离的 DSH home 测试：
+下面命令使用 PowerShell。先克隆仓库，再用隔离的 DSH home 测试：
 
 ~~~powershell
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git
@@ -110,9 +128,9 @@ Responses hosted tools：
 ~~~yaml
     google:
       api: google-generative-ai
-      apiKeyEnv: DSH_BRIDGE_CODEX_API_KEY
+      apiKeyEnv: GEMINI_API_KEY
       displayName: Gemini 3.6 Flash
-      baseURL: https://api.nodus.sbs/v1beta
+      baseURL: https://generativelanguage.googleapis.com/v1beta
       reasoning: off
       models:
         - id: gemini-3.6-flash
@@ -319,6 +337,7 @@ pnpm run check
 pnpm run build
 pnpm pack --dry-run
 git diff --check
+git diff --exit-code -- lib
 git status --short
 ~~~
 

@@ -74,15 +74,15 @@ describe('Bridge provider summary card', () => {
   it('renders the custom route and web_search control without exposing key material', () => {
     const credential: CredentialView = { configured: true, source: 'file', writable: true }
     const markup = renderToStaticMarkup(createElement(ProviderSummaryCard, {
-      route: 'nodus-bridge',
+      route: 'custom-bridge',
       profile: {
-        apiKeyEnv: 'NODUS_API_KEY',
-        displayName: 'Nodus via Bridge',
-        baseURL: 'https://api.nodus.sbs/v1',
+        apiKeyEnv: 'BRIDGE_API_KEY',
+        displayName: 'Custom Bridge',
+        baseURL: 'https://example.test/v1',
         models: [{ id: 'gpt-5.6-luna' }],
         hostedTools: { enabled: false },
       },
-      credentialRef: 'NODUS_API_KEY',
+      credentialRef: 'BRIDGE_API_KEY',
       credential,
       active: true,
       namespace: namespace(),
@@ -94,8 +94,8 @@ describe('Bridge provider summary card', () => {
       t: t as never,
       onChanged: () => undefined,
     }))
-    expect(markup).toContain('Nodus via Bridge')
-    expect(markup).toContain('nodus-bridge')
+    expect(markup).toContain('Custom Bridge')
+    expect(markup).toContain('custom-bridge')
     expect(markup).toContain('编辑')
     expect(markup).toContain('删除')
     expect(markup).not.toContain('编辑提供方')
@@ -147,7 +147,7 @@ describe('Bridge provider summary card', () => {
       profile: {
         api: 'google-generative-ai',
         apiKeyEnv: 'GOOGLE_KEY',
-        baseURL: 'https://api.nodus.sbs/v1beta',
+        baseURL: 'https://example.test/v1beta',
         models: [{ id: 'gemini-3.6-flash' }],
       },
       credentialConfigured: true,

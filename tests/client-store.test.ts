@@ -41,7 +41,7 @@ function apiFor(namespace: SettingsNamespaceView, credential: CredentialView = {
       providers: vi.fn(async () => ({ result: { ok: true as const, value: { providers: [{ provider: 'gateway', displayName: 'Gateway', settingsNs: '', settingsPath: [], active: true }] } } })),
     },
     credentials: {
-      describe: vi.fn(async () => ({ result: { ok: true as const, value: { credentials: { NODUS_API_KEY: credential } } } })),
+      describe: vi.fn(async () => ({ result: { ok: true as const, value: { credentials: { BRIDGE_API_KEY: credential } } } })),
     },
   }
 }
@@ -50,7 +50,7 @@ describe('BridgeSettingsStore', () => {
   it('joins routes with credential state without carrying a secret value', async () => {
     const api = apiFor(view({ providers: {
       gateway: {
-        apiKeyEnv: 'NODUS_API_KEY',
+        apiKeyEnv: 'BRIDGE_API_KEY',
         displayName: 'Gateway',
         baseURL: 'https://example.test/v1',
         models: [{ id: 'm' }],
@@ -61,9 +61,9 @@ describe('BridgeSettingsStore', () => {
     await store.load()
     const state = store.store.getSnapshot()
     expect(state.status).toBe('ready')
-    expect(state.routes[0]).toMatchObject({ route: 'gateway', credentialRef: 'NODUS_API_KEY', active: true })
+    expect(state.routes[0]).toMatchObject({ route: 'gateway', credentialRef: 'BRIDGE_API_KEY', active: true })
     expect(state.routes[0]).not.toHaveProperty('apiKey')
-    expect(api.credentials.describe).toHaveBeenCalledWith({ refs: ['NODUS_API_KEY'] })
+    expect(api.credentials.describe).toHaveBeenCalledWith({ refs: ['BRIDGE_API_KEY'] })
   })
 
   it('reports a missing namespace instead of writing to native llm-pi-ai', async () => {

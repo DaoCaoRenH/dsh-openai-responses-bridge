@@ -1,5 +1,8 @@
 # dsh-openai-responses-bridge
 
+[![CI](https://github.com/DaoCaoRenH/dsh-openai-responses-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/DaoCaoRenH/dsh-openai-responses-bridge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 dsh-openai-responses-bridge is an independent DeepSeek Harness bundle for
 Google Generative AI and third-party services exposing an OpenAI
 Responses-compatible endpoint. Its DSH plugin identity is
@@ -22,6 +25,22 @@ committed `lib/` output, but no API keys, credential files, or runtime user data
 the package without running a local build first. Generated browser source maps
 are intentionally excluded from the repository and package.
 
+## Public release status
+
+| Item | Value |
+| --- | --- |
+| Package | `dsh-openai-responses-bridge` |
+| DSH plugin id | `llm-openai-responses-bridge` |
+| Target DSH APIs | `0.1.0-rc.7` |
+| Supported install source | GitHub checkout, release tag, or pinned commit |
+| License | MIT; see [LICENSE](LICENSE) |
+
+This is a compatibility-bound preview release. The supported installation path
+is a reviewed GitHub tag or commit SHA; pinning the revision makes deployments
+reproducible. The host source tree is not modified, and the committed `lib/`
+directory is part of the release artifact. Check [SECURITY.md](SECURITY.md)
+before adding credentials or opening an issue.
+
 ## Requirements
 
 - DeepSeek Harness 0.1.0-rc.7 APIs used by this package;
@@ -42,9 +61,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development checks and
 [SECURITY.md](SECURITY.md) for secret-handling and vulnerability-reporting
 guidance.
 
-## Install on Windows
+## Install
 
-Clone the repository and use an isolated DSH home for the first install:
+The commands below use PowerShell. Clone the repository and use an isolated DSH
+home for the first install:
 
 ~~~powershell
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git
@@ -112,9 +132,9 @@ tools are intentionally unavailable on this route:
 ~~~yaml
     google:
       api: google-generative-ai
-      apiKeyEnv: DSH_BRIDGE_CODEX_API_KEY
+      apiKeyEnv: GEMINI_API_KEY
       displayName: Gemini 3.6 Flash
-      baseURL: https://api.nodus.sbs/v1beta
+      baseURL: https://generativelanguage.googleapis.com/v1beta
       reasoning: off
       models:
         - id: gemini-3.6-flash
@@ -336,6 +356,7 @@ pnpm run check
 pnpm run build
 pnpm pack --dry-run
 git diff --check
+git diff --exit-code -- lib
 git status --short
 ~~~
 

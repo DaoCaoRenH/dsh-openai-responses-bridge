@@ -23,12 +23,14 @@ pnpm run check
 pnpm run build
 pnpm pack --dry-run
 git diff --check
+git diff --exit-code -- lib
 ~~~
 
 The checked-in `lib/` directory is the installable DSH bundle. If source code
 changes affect the bundle, include the regenerated runtime and type output in
 the same change. Generated source maps, local DSH state, credentials, logs, and
-dependency directories must not be committed.
+dependency directories must not be committed. CI also verifies that rebuilding
+the committed bundle leaves `lib/` unchanged.
 
 ## Scope and review expectations
 

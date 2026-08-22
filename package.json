@@ -2,9 +2,10 @@
   "name": "dsh-openai-responses-bridge",
   "version": "0.1.0",
   "description": "DeepSeek Harness bundle for Google Generative AI and third-party OpenAI Responses providers.",
+  "author": "DaoCaoRenH",
   "repository": {
     "type": "git",
-    "url": "https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git"
+    "url": "git+https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git"
   },
   "bugs": {
     "url": "https://github.com/DaoCaoRenH/dsh-openai-responses-bridge/issues"
@@ -55,6 +56,7 @@
     "node": "^22.19.0 || >=24.0.0",
     "pnpm": ">=10.0.0"
   },
+  "packageManager": "pnpm@11.7.0",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -127,7 +129,6 @@
     "react-dom": "^18.2.0",
     "tsdown": "^0.22.2",
     "typescript": "^5.9.3",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.8"
   },
   "license": "MIT"
