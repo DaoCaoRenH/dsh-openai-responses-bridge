@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, resolve } from 'node:path'
+import { basename, dirname, relative, resolve, sep } from 'node:path'
 import { transform } from 'lightningcss'
 import { defineConfig, type Plugin } from 'tsdown'
 
@@ -18,6 +18,12 @@ const PLATFORM_MODULES = [
 const CSS_PREFIX = '\0dsh-bridge-css:'
 const CSS_SUFFIX = '.mjs'
 const CLIENT_MODULE_ID = 'dsh-openai-responses-bridge'
+const CLIENT_SOURCE_ROOT = resolve('src/client')
+
+/** Keep LightningCSS module hashes independent of the checkout path and OS. */
+function stableCssFilename(file: string): string {
+  return relative(CLIENT_SOURCE_ROOT, file).split(sep).join('/')
+}
 
 function cssModulesPlugin(id: string): Plugin {
   const virtualFiles = new Map<string, string>()
@@ -36,7 +42,7 @@ function cssModulesPlugin(id: string): Plugin {
       this.addWatchFile(file)
       const source = await readFile(file)
       const result = transform({
-        filename: file,
+        filename: stableCssFilename(file),
         code: source,
         cssModules: { pattern: '[hash]_[local]' },
         minify: true,
