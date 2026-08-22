@@ -8,13 +8,6 @@ import {
 import type { HostedWebSearchChatData } from './HostedWebSearchDefinition.ts'
 import css from './HostedWebSearchCard.module.css'
 
-function stateOf(status: HostedWebSearchChatData['status']): 'done' | 'warning' | 'ongoing' | 'error' {
-  if (status === 'completed') return 'done'
-  if (status === 'failed') return 'error'
-  if (status === 'aborted') return 'warning'
-  return 'ongoing'
-}
-
 function statusLabel(status: HostedWebSearchChatData['status']): string {
   if (status === 'completed') return '搜索完成'
   if (status === 'failed') return '搜索失败'
