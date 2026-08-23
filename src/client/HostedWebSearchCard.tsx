@@ -45,7 +45,6 @@ export function HostedWebSearchCard({ data }: { data: HostedWebSearchChatData })
   const [open, setOpen] = useState(false)
   const sources = sourceViews(data)
   const query = data.queries.at(-1)
-  const summary = query ?? statusLabel(data.status)
   const expandable = sources.length > 0 || data.error !== undefined || data.status !== 'in_progress'
   return (
     <div className={css.root} data-hosted-web-search data-status={data.status}>
@@ -57,7 +56,7 @@ export function HostedWebSearchCard({ data }: { data: HostedWebSearchChatData })
         icon={data.status === 'in_progress' || data.status === 'searching'
           ? <StateDot state="ongoing" />
           : <IconSearchOutline16 size={14} />}
-        title="Web Search Openai"
+        title="Web Search OpenAI"
         open={open}
         expandable={expandable}
         expandOnRowClick
@@ -65,8 +64,12 @@ export function HostedWebSearchCard({ data }: { data: HostedWebSearchChatData })
         onToggle={() => { setOpen(value => !value) }}
         collapsedContent={(
           <>
-            <span className={css.separator} aria-hidden />
-            <span className={css.summary}>{summary}</span>
+            {query !== undefined && (
+              <>
+                <span className={css.separator} aria-hidden />
+                <span className={css.summary}>{query}</span>
+              </>
+            )}
             <span className={css.separator} aria-hidden />
             <span className={css.status}>{statusLabel(data.status)}</span>
             {sources.length > 0 && (

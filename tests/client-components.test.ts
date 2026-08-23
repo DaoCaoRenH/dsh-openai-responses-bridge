@@ -7,6 +7,10 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Button: ({ children }: { children?: ReactNode }) => createElement('button', null, children),
   Modal: ({ open, children }: { open: boolean; children?: ReactNode }) => open ? createElement('div', { role: 'dialog' }, children) : null,
+  DisclosureRow: ({ title, collapsedContent, children }: { title: string; collapsedContent?: ReactNode; children?: ReactNode }) => createElement('div', null, title, collapsedContent, children),
+  IconSearchOutline16: () => createElement('span'),
+  StateDot: () => createElement('span'),
+  WebBlock: () => createElement('div'),
 }))
 
 vi.mock('@deepseek-ai/dsh-client-runtime/client', () => ({
@@ -18,6 +22,7 @@ vi.mock('@deepseek-ai/dsh-client-runtime/client', () => ({
 }))
 
 import { AddCustomProviderCard } from '../src/client/AddCustomProviderCard.tsx'
+import { HostedWebSearchCard } from '../src/client/HostedWebSearchCard.tsx'
 import { ProviderSummaryCard } from '../src/client/ProviderSummaryCard.tsx'
 import { BRIDGE_SETTINGS_NS } from '../src/client/fields.ts'
 
@@ -158,5 +163,30 @@ describe('Bridge provider summary card', () => {
     expect(markup).toContain('google-generative-ai')
     expect(markup).toContain('Google 不支持 hosted search')
     expect(markup).toContain('disabled=""')
+  })
+})
+
+describe('Hosted web search card', () => {
+  const data = {
+    provider: 'gateway',
+    model: 'bridge-model',
+    status: 'completed' as const,
+    queries: [] as string[],
+    sources: [],
+    citations: [],
+  }
+
+  it('does not repeat the status when the upstream search has no query', () => {
+    const markup = renderToStaticMarkup(createElement(HostedWebSearchCard, { data }))
+    expect(markup).toContain('Web Search OpenAI')
+    expect(markup.match(/搜索完成/g)).toHaveLength(1)
+  })
+
+  it('shows the query alongside one terminal status', () => {
+    const markup = renderToStaticMarkup(createElement(HostedWebSearchCard, {
+      data: { ...data, queries: ['Prime Agent GitHub AI'] },
+    }))
+    expect(markup).toContain('Prime Agent GitHub AI')
+    expect(markup.match(/搜索完成/g)).toHaveLength(1)
   })
 })
