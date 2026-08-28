@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react';
-import type { CredentialView, IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
 import type { BridgeProviderProfile } from '../types.ts';
 import type { BridgeKey } from './locales.ts';
+import type { BridgeRemoteApi, CredentialInfo, SettingsNamespaceView } from './remote.ts';
 interface ProviderSummaryCardProps {
     route: string;
     profile: BridgeProviderProfile;
     credentialRef: string | undefined;
-    credential: CredentialView | undefined;
+    credential: CredentialInfo | undefined;
     active: boolean;
     namespace: SettingsNamespaceView;
     writable: boolean;
-    api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>;
+    api: BridgeRemoteApi;
     t: (key: BridgeKey) => string;
     onChanged: () => void;
 }

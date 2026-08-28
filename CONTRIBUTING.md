@@ -6,13 +6,19 @@ Thanks for helping improve `dsh-openai-responses-bridge`.
 
 - Node.js `^22.19.0` or `>=24.0.0`;
 - pnpm `>=10`;
-- a DeepSeek Harness `0.1.1-rc.2` development environment for integration work.
+- a DeepSeek Harness `0.1.2-alpha.1` development environment for integration work.
 
 Install dependencies from the repository root:
 
 ~~~powershell
-pnpm install --frozen-lockfile
+pnpm install --no-frozen-lockfile
 ~~~
+
+The current DSH `0.1.2-alpha.1` packages are developed in a companion DSH
+workspace and are not yet available from the configured npm registry. Use that
+workspace's built packages for local type checking and bundle generation.
+Regenerate and commit a lockfile after the DSH packages are published; do not
+restore a lockfile for a retired DSH release.
 
 ## Required checks
 

@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import type { IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
 import type { BridgeProviderProfile } from '../types.ts';
 import type { BridgeKey } from './locales.ts';
+import type { BridgeRemoteApi, SettingsNamespaceView } from './remote.ts';
 interface AddCustomProviderCardProps {
     namespace: SettingsNamespaceView;
     existingRoutes: readonly string[];
     writable: boolean;
-    api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>;
+    api: BridgeRemoteApi;
     t: (key: BridgeKey) => string;
     mode?: 'create' | 'edit';
     route?: string;

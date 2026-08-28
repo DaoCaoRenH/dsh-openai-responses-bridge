@@ -1,12 +1,12 @@
-import type { CredentialView, IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client';
-import { type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client';
+import type { BridgeCredentialsRemote, BridgeLlmRemote, BridgeSettingsRemote, CredentialInfo, SettingsNamespaceView } from './remote.ts';
+import { type SnapshotStore } from '@deepseek-ai/dsh-client-store';
 import type { BridgeProviderProfile } from '../types.ts';
 /** A route row rendered by the Bridge settings section. */
 export interface BridgeRouteRow {
     route: string;
     profile: BridgeProviderProfile;
     credentialRef: string | undefined;
-    credential: CredentialView | undefined;
+    credential: CredentialInfo | undefined;
     active: boolean;
     displayName: string;
 }
@@ -26,7 +26,11 @@ export declare class BridgeSettingsStore {
     private readonly api;
     readonly store: SnapshotStore<BridgeSettingsState>;
     private generation;
-    constructor(api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>);
+    constructor(api: {
+        settings: BridgeSettingsRemote;
+        credentials: Pick<BridgeCredentialsRemote, 'describe'>;
+        llm: BridgeLlmRemote;
+    });
     load(): Promise<void>;
     dispose(): void;
 }

@@ -1,23 +1,23 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CredentialView, IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { AddCustomProviderCard } from './AddCustomProviderCard.tsx'
 import { deriveApiKeyRef, providerDeleteOps, webSearchOps, webSearchEnabled } from './fields.ts'
 import type { BridgeProviderProfile } from '../types.ts'
 import type { BridgeKey } from './locales.ts'
 import { summaryOf } from './fields.ts'
+import type { BridgeRemoteApi, CredentialInfo, SettingsNamespaceView } from './remote.ts'
 import styles from './BridgeSection.module.css'
 
 interface ProviderSummaryCardProps {
   route: string
   profile: BridgeProviderProfile
   credentialRef: string | undefined
-  credential: CredentialView | undefined
+  credential: CredentialInfo | undefined
   active: boolean
   namespace: SettingsNamespaceView
   writable: boolean
-  api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>
+  api: BridgeRemoteApi
   t: (key: BridgeKey) => string
   onChanged: () => void
 }
@@ -74,13 +74,13 @@ export function ProviderSummaryCard({
     setBusy(true)
     setFailure(undefined)
     try {
-      const response = await api.settings.mutate({
-        ns: namespace.ns,
-        ops: webSearchOps(route, profile, enabled),
-        expectedRevision: namespace.revision,
-      })
-      if (!response.result.ok) {
-        setFailure(response.result.error.code === 'settings-conflict' ? t('conflict') : response.result.error.message)
+      const response = await api.settings.mutate(
+        namespace.ns,
+        webSearchOps(route, profile, enabled),
+        namespace.revision,
+      )
+      if (!response.ok) {
+        setFailure(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
         return
       }
       onChanged()
@@ -111,19 +111,19 @@ export function ProviderSummaryCard({
       // Match DSH's native removal semantics: remove a card-owned credential
       // first, while leaving YAML/external credential references untouched.
       if (managedCredentialRef !== undefined) {
-        const credential = await api.credentials.unset({ ref: managedCredentialRef })
-        if (!credential.result.ok) {
-          setDeleteFailure(credential.result.error.message)
+        const credential = await api.credentials.unset(managedCredentialRef)
+        if (!credential.ok) {
+          setDeleteFailure(credential.error.message)
           return
         }
       }
-      const response = await api.settings.mutate({
-        ns: namespace.ns,
-        ops: providerDeleteOps(route),
-        expectedRevision: namespace.revision,
-      })
-      if (!response.result.ok) {
-        setDeleteFailure(response.result.error.code === 'settings-conflict' ? t('conflict') : response.result.error.message)
+      const response = await api.settings.mutate(
+        namespace.ns,
+        providerDeleteOps(route),
+        namespace.revision,
+      )
+      if (!response.ok) {
+        setDeleteFailure(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
         return
       }
       setDeleteOpen(false)

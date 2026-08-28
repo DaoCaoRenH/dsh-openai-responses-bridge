@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { CredentialView, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
+import type { CredentialInfo, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
@@ -13,7 +13,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   WebBlock: () => createElement('div'),
 }))
 
-vi.mock('@deepseek-ai/dsh-client-runtime/client', () => ({
+vi.mock('@deepseek-ai/dsh-client-store', () => ({
   createSnapshotStore: <T>(initial: T) => ({
     getSnapshot: () => initial,
     subscribe: () => () => undefined,
@@ -77,7 +77,7 @@ function namespace(): SettingsNamespaceView {
 
 describe('Bridge provider summary card', () => {
   it('renders the custom route and web_search control without exposing key material', () => {
-    const credential: CredentialView = { configured: true, source: 'file', writable: true }
+    const credential: CredentialInfo = { configured: true, source: 'file', writable: true }
     const markup = renderToStaticMarkup(createElement(ProviderSummaryCard, {
       route: 'custom-bridge',
       profile: {
@@ -93,8 +93,8 @@ describe('Bridge provider summary card', () => {
       namespace: namespace(),
       writable: true,
       api: {
-        settings: { mutate: async () => ({ result: { ok: true as const, value: namespace() } }) },
-        credentials: { unset: async () => ({ result: { ok: true as const, value: {} } }) },
+        settings: { mutate: async () => ({ ok: true as const, value: namespace() }) },
+        credentials: { unset: async () => ({ ok: true as const, value: undefined }) },
       } as never,
       t: t as never,
       onChanged: () => undefined,
@@ -114,9 +114,9 @@ describe('Bridge provider summary card', () => {
       existingRoutes: [],
       writable: true,
       api: {
-        settings: { mutate: async () => ({ result: { ok: true as const, value: namespace() } }) },
-        credentials: { set: async () => ({ result: { ok: true as const, value: {} } }) },
-        llm: { discoverModels: async () => ({ result: { ok: true as const, value: { models: [] } } }) },
+        settings: { mutate: async () => ({ ok: true as const, value: namespace() }) },
+        credentials: { set: async () => ({ ok: true as const, value: undefined }) },
+        llm: { discoverModels: async () => ({ ok: true as const, value: [] }) },
       } as never,
       t: t as never,
       onCancel: () => undefined,
@@ -140,11 +140,11 @@ describe('Bridge provider summary card', () => {
       existingRoutes: [],
       writable: true,
       api: {
-        settings: { mutate: async () => ({ result: { ok: true as const, value: namespace() } }) },
+        settings: { mutate: async () => ({ ok: true as const, value: namespace() }) },
         credentials: {
-          set: async () => ({ result: { ok: true as const, value: {} } }),
+          set: async () => ({ ok: true as const, value: undefined }),
         },
-        llm: { discoverModels: async () => ({ result: { ok: true as const, value: { models: [] } } }) },
+        llm: { discoverModels: async () => ({ ok: true as const, value: [] }) },
       } as never,
       t: t as never,
       mode: 'edit',
@@ -175,9 +175,19 @@ describe('Hosted web search card', () => {
     sources: [],
     citations: [],
   }
+  const labels = {
+    noResults: '未找到结果',
+    sourcesTruncated: '来源列表已截断',
+    http: 'HTTP',
+    contentTruncated: '内容已截断',
+    markdown: {
+      code: { copyLabel: '复制', copiedLabel: '已复制' },
+      footnotes: '脚注',
+    },
+  }
 
   it('does not repeat the status when the upstream search has no query', () => {
-    const markup = renderToStaticMarkup(createElement(HostedWebSearchCard, { data }))
+    const markup = renderToStaticMarkup(createElement(HostedWebSearchCard, { data, labels }))
     expect(markup).toContain('Web Search OpenAI')
     expect(markup.match(/搜索完成/g)).toHaveLength(1)
   })
@@ -185,6 +195,7 @@ describe('Hosted web search card', () => {
   it('shows the query alongside one terminal status', () => {
     const markup = renderToStaticMarkup(createElement(HostedWebSearchCard, {
       data: { ...data, queries: ['Prime Agent GitHub AI'] },
+      labels,
     }))
     expect(markup).toContain('Prime Agent GitHub AI')
     expect(markup.match(/搜索完成/g)).toHaveLength(1)

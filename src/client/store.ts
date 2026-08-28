@@ -1,7 +1,7 @@
 import type {
-  ConfigurableProviderView, CredentialView, IApiClient, SettingsNamespaceView,
-} from '@deepseek-ai/dsh-api-remotes/client'
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+  BridgeCredentialsRemote, BridgeLlmRemote, BridgeSettingsRemote, CredentialInfo, SettingsNamespaceView,
+} from './remote.ts'
+import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import {
   BRIDGE_SETTINGS_NS, credentialRefOf, providerAt, webSearchEnabled,
 } from './fields.ts'
@@ -12,7 +12,7 @@ export interface BridgeRouteRow {
   route: string
   profile: BridgeProviderProfile
   credentialRef: string | undefined
-  credential: CredentialView | undefined
+  credential: CredentialInfo | undefined
   active: boolean
   displayName: string
 }
@@ -38,25 +38,22 @@ function recordOf(value: unknown): Record<string, unknown> {
     : {}
 }
 
-function routeEntries(namespace: SettingsNamespaceView, providers: readonly ConfigurableProviderView[]): BridgeRouteRow[] {
+function routeEntries(namespace: SettingsNamespaceView, providers: readonly { id: string }[]): BridgeRouteRow[] {
   const source = recordOf(recordOf(namespace.value).providers)
   // Bridge routes intentionally do not register as configurable-directory
   // entries: DSH's native ModelsSection renders that directory, which would
-  // mix Bridge routes into the native page. The Host API still returns active
-  // adapter-only routes with settingsNs: ''; use the active flag regardless of
-  // directory ownership so this standalone page shows the correct status.
-  const active = new Set(providers.filter(entry => entry.active).map(entry => entry.provider))
-  const directory = new Map(providers.filter(entry => entry.settingsNs === BRIDGE_SETTINGS_NS).map(entry => [entry.provider, entry]))
+  // mix Bridge routes into the native page. The current Host API reports live
+  // adapter routes separately, so the route id is all this page needs.
+  const active = new Set(providers.map(entry => entry.id))
   return Object.entries(source).flatMap(([route, raw]) => {
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return []
     const profile = raw as BridgeProviderProfile
-    const entry = directory.get(route)
     return [{
       route,
       profile,
       credentialRef: credentialRefOf(profile),
       credential: undefined,
-      active: active.has(route) || entry?.active === true,
+      active: active.has(route),
       displayName: typeof profile.displayName === 'string' && profile.displayName.length > 0
         ? profile.displayName
         : route,
@@ -78,18 +75,22 @@ export class BridgeSettingsStore {
 
   private generation = 0
 
-  constructor(private readonly api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>) {}
+  constructor(private readonly api: {
+    settings: BridgeSettingsRemote
+    credentials: Pick<BridgeCredentialsRemote, 'describe'>
+    llm: BridgeLlmRemote
+  }) {}
 
   async load(): Promise<void> {
     const generation = ++this.generation
     this.store.update(state => { state.status = 'loading'; state.error = null })
     try {
       const [settingsResponse, providersResponse] = await Promise.all([
-        this.api.settings.describe({}),
-        this.api.llm.providers({}),
+        this.api.settings.describe(),
+        this.api.llm.listProviders(),
       ])
-      if (!settingsResponse.result.ok) throw new Error(settingsResponse.result.error.message)
-      const settingsValue = settingsResponse.result.value
+      if (!settingsResponse.ok) throw new Error(settingsResponse.error.message)
+      const settingsValue = settingsResponse.value
       const namespace = settingsValue.namespaces.find(view => view.ns === BRIDGE_SETTINGS_NS)
       if (namespace === undefined) {
         if (generation !== this.generation) return
@@ -102,16 +103,16 @@ export class BridgeSettingsStore {
         })
         return
       }
-      const providers = providersResponse.result.ok ? providersResponse.result.value.providers : []
+      const providers = providersResponse.ok ? providersResponse.value : []
       const routes = routeEntries(namespace, providers)
       const refs = [...new Set(routes.flatMap(route => route.credentialRef === undefined ? [] : [route.credentialRef]))]
       let credentialError: string | null = null
-      let credentials: Record<string, CredentialView> = {}
+      let credentials: Record<string, CredentialInfo> = {}
       if (refs.length > 0) {
         try {
-          const credentialsResponse = await this.api.credentials.describe({ refs })
-          if (credentialsResponse.result.ok) credentials = credentialsResponse.result.value.credentials
-          else credentialError = credentialsResponse.result.error.message
+          const credentialsResponse = await this.api.credentials.describe(refs)
+          if (credentialsResponse.ok) credentials = credentialsResponse.value
+          else credentialError = credentialsResponse.error.message
         } catch (error) {
           credentialError = messageOf(error)
         }

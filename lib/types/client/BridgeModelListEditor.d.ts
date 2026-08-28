@@ -9,11 +9,12 @@
  * here; every new model receives Bridge's fixed dispatch map.
  */
 import type { ReactNode } from 'react';
-import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client';
 import type { BridgeKey } from './locales.ts';
 import type { BridgeModelDraft } from './modelFields.ts';
+import type { BridgeLlmRemote } from './remote.ts';
 export interface BridgeProbeTarget {
     settingsNs: string;
+    provider?: string;
     baseURL?: string;
     api?: string;
     apiKey?: string;
@@ -23,7 +24,9 @@ export interface BridgeModelListEditorProps {
     onChange: (models: BridgeModelDraft[]) => void;
     probe: BridgeProbeTarget;
     probeBlocked?: string;
-    api: Pick<IApiClient, 'llm'>;
+    api: Pick<{
+        llm: BridgeLlmRemote;
+    }, 'llm'>;
     t: (key: BridgeKey) => string;
     disabled: boolean;
 }

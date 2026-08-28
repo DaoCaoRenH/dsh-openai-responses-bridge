@@ -13,12 +13,12 @@ export const HOSTED_WEB_SEARCH_EVENT_TYPES: readonly HostedWebSearchEventType[] 
 /**
  * Register the Bridge event family with the current DSH persistence catalog.
  *
- * DSH rc.2 exposes the catalog as a runtime Set but does not yet expose a
- * public third-party event registration method. Mutating this exported Set is
- * the narrow compatibility seam: the DSH session implementation and all
- * persistence backends remain untouched, while a Bridge-loaded runtime knows
- * that these log-only facts are safe to preserve. The Bridge Host must be
- * loaded before persisted sessions are resumed.
+ * DSH 0.1.2-alpha.1 exposes the session event catalog as a runtime Set but
+ * does not expose a public third-party event registration method. Mutating
+ * this exported Set keeps the DSH session implementation and persistence
+ * backends untouched while the Bridge-loaded runtime marks these log-only
+ * facts as safe to preserve. The Bridge Host must be loaded before persisted
+ * sessions are resumed.
  */
 export function registerHostedWebSearchSessionEvents(): void {
   const catalog = KNOWN_SESSION_EVENT_TYPES as Set<string>

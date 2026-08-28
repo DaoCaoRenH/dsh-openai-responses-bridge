@@ -33,6 +33,10 @@ function integerOf(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) ? value : undefined
 }
 
+function booleanOf(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined
+}
+
 function httpUrlOf(value: unknown): string | undefined {
   const url = stringOf(value, MAX_URL_LENGTH)
   if (url === undefined) return undefined
@@ -194,7 +198,11 @@ export interface HostedWebSearchObserverOptions {
   model: string
   turn: number
   step: number
+  /** Query text supplied by a PTC caller when the provider omits it in SSE. */
+  queries?: string[]
   responseId?: string
+  /** Optional prefix that keeps concurrent PTC search identities distinct. */
+  idPrefix?: string
   onCheckpoint: (
     kind: 'start' | 'update' | 'end',
     state: HostedWebSearchState,
@@ -241,6 +249,17 @@ export class HostedWebSearchObserver {
     for (const entry of this.entries.values()) {
       if (!entry.ended) this.endEntry(entry, reason, error)
     }
+  }
+
+  /** Return detached final states for the hosted calls observed so far. */
+  states(): HostedWebSearchState[] {
+    return [...this.entries.values()].map(entry => ({
+      ...entry.state,
+      queries: [...entry.state.queries],
+      sources: entry.state.sources.map(source => ({ ...source })),
+      citations: entry.state.citations.map(citation => ({ ...citation })),
+      ...entry.state.error === undefined ? {} : { error: { ...entry.state.error } },
+    }))
   }
 
   private observeUnsafe(raw: unknown): void {
@@ -337,11 +356,13 @@ export class HostedWebSearchObserver {
     const eventType = typeof event.type === 'string' ? event.type : ''
     const outputIndex = integerOf(event.output_index)
     const itemId = idOf(event.item_id, event.call_id, event.search_id, event.search_call_id, event.id, item?.id)
-    const id = itemId
+    const rawId = itemId
       ?? (outputIndex === undefined ? undefined : `bridge-search-${this.responseId ?? 'response'}-${outputIndex}`)
       ?? `bridge-search-${this.responseId ?? 'response'}-${this.sequence}`
+    const id = this.options.idPrefix === undefined ? rawId : `${this.options.idPrefix}:${rawId}`
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
+    const truncated = booleanOf(action?.truncated ?? item?.truncated ?? event.truncated)
     const initial: HostedWebSearchState = {
       version: 1,
       searchId: id,
@@ -351,9 +372,10 @@ export class HostedWebSearchObserver {
       model: this.options.model,
       ...this.responseId === undefined ? {} : { responseId: this.responseId },
       status: statusOf(item?.status) ?? statusOf(event.status) ?? statusFromEventType(eventType) ?? 'in_progress',
-      queries: queryValues(action?.query, action?.queries, item?.query, event.query),
+      queries: queryValues(this.options.queries, action?.query, action?.queries, item?.query, event.query),
       sources: sourceValues(action?.sources, item?.sources, event.sources),
       citations: [],
+      ...truncated === undefined ? {} : { truncated },
     }
     const entry: SearchEntry = {
       id,
@@ -390,12 +412,14 @@ export class HostedWebSearchObserver {
     const queries = queryValues(entry.state.queries, action?.query, action?.queries, item.query, event.query)
     const sources = sourceValues(entry.state.sources, action?.sources, item.sources, event.sources)
     const error = this.errorOf(event, item.error)
+    const truncated = booleanOf(action?.truncated ?? item.truncated ?? event.truncated)
     const next: HostedWebSearchState = {
       ...entry.state,
       ...this.responseId === undefined ? {} : { responseId: this.responseId },
       ...nextStatus === undefined ? {} : { status: nextStatus },
       queries,
       sources,
+      ...truncated === undefined ? {} : { truncated },
       ...error === undefined ? {} : { error },
     }
     this.replace(entry, next)

@@ -1,8 +1,10 @@
-import type { SettingsNamespaceView, SettingsPathOpView } from '@deepseek-ai/dsh-api-remotes/client';
 import type { BridgeApiProtocol, BridgeProviderProfile, HostedToolsConfig } from '../types.ts';
 import type { BridgeModelDraft } from './modelFields.ts';
+import type { JsonValue, SettingsNamespaceView, SettingsPathOpView } from './remote.ts';
 /** The only settings namespace owned by the Bridge browser half. */
 export declare const BRIDGE_SETTINGS_NS = "llm-openai-responses-bridge";
+/** Convert a profile draft into the lossless JSON vocabulary of the Remote API. */
+export declare function jsonValueOf(value: unknown): JsonValue;
 export interface ProviderDraft {
     route: string;
     displayName: string;

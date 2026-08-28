@@ -2,12 +2,19 @@ import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import { scopeTarget } from '@deepseek-ai/dsh-scope'
 import LlmRuntime, { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import ToolRuntime, { RUN_CODE_NAME } from '@deepseek-ai/dsh-tools'
+import type { ToolDispatchExecution, ToolExecutionResult, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { KNOWN_SESSION_EVENT_TYPES, Session, SessionId } from '@deepseek-ai/dsh-session'
 import { SettingsProvider, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { applyBridgeRequest } from '../src/compatibility.ts'
 import { assertServiceable, Config } from '../src/config.ts'
 import { HostedWebSearchObserver } from '../src/hosted-web-search/normalize.ts'
+import { executeHostedWebSearch } from '../src/hosted-web-search/executor.ts'
 import {
   HOSTED_WEB_SEARCH_EVENT_TYPES,
   activeTurnStep,
@@ -639,6 +646,199 @@ describe('DSH public adapter integration', () => {
     await new Promise(resolve => setTimeout(resolve, 10))
     expect(ctx.llm.listProviders()).toEqual([])
     expect(ctx.llm.listConfigurableProviders()).toEqual([])
+    await ctx.fiber.dispose()
+  })
+})
+
+describe('PTC hosted web_search bridge', () => {
+  function execution(
+    name: string,
+    token: ToolExecutionToken,
+    agent: Agent,
+    parent?: ToolExecutionToken,
+    argumentsValue: unknown = {},
+  ): ToolDispatchExecution {
+    return {
+      callId: ToolCallId(`${name}-call`),
+      rootCallId: ToolCallId('run-code-call'),
+      name,
+      arguments: argumentsValue,
+      agent,
+      signal: new AbortController().signal,
+      token,
+      ...parent === undefined ? {} : { parent },
+    }
+  }
+
+  it('sends a minimal hosted Responses request and merges duplicate PTC queries', async () => {
+    vi.stubEnv('BRIDGE_TEST_KEY', 'test-key')
+    const server = await mockResponses(false)
+    const profile = resolveProfiles({ providers: {
+      gateway: {
+        apiKeyEnv: 'BRIDGE_TEST_KEY',
+        baseURL: server.url,
+        models: [{ id: 'bridge-model' }],
+        hostedTools: { enabled: true, definitions: [{ type: 'web_search' }] },
+      },
+    } }).get('gateway')!
+    const model = profile.piProvider.getModels()[0]!
+    registerHostedWebSearchSessionEvents()
+    const session = Session.create(SessionId('ptc-hosted-search'))
+    session.append('turn/start', { turn: 2 })
+    session.append('step/start', { turn: 2, step: 1 })
+
+    const result = await executeHostedWebSearch({ queries: ['one', 'one', 'two'] }, {
+      model,
+      apiKey: 'test-key',
+      hostedTools: { enabled: true, definitions: [{ type: 'web_search' }] },
+      session,
+      searchIdPrefix: 'ptc-call',
+      signal: new AbortController().signal,
+    })
+
+    expect(result.content).toContain('回答内容')
+    expect(result.content).toContain('### two')
+    expect(result.sources).toEqual([{ url: 'https://example.test/source', title: 'Example source' }])
+    expect(result.truncated).toBe(false)
+    expect((await server.body(0)).tools).toEqual([{ type: 'web_search' }])
+    expect((await server.body(0)).max_output_tokens).toBeUndefined()
+    expect((await server.body(0)).input).toEqual([{
+      role: 'user',
+      content: [{ type: 'input_text', text: 'Search the web for: one' }],
+    }])
+    expect((await server.body(1)).input).toEqual([{
+      role: 'user',
+      content: [{ type: 'input_text', text: 'Search the web for: two' }],
+    }])
+    const endEvents = session.events.filter(event => event.type === 'bridge/hosted-web-search/end')
+    expect(endEvents).toHaveLength(2)
+    expect(endEvents[0]?.data.searchId).not.toBe(endEvents[1]?.data.searchId)
+  })
+
+  it('intercepts only an active run_code nested web_search and returns the native canonical value', async () => {
+    vi.stubEnv('BRIDGE_TEST_KEY', 'test-key')
+    const server = await mockResponses(false)
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(Bridge, {
+      providers: {
+        gateway: {
+          apiKeyEnv: 'BRIDGE_TEST_KEY',
+          baseURL: server.url,
+          models: [{ id: 'bridge-model' }],
+          hostedTools: { enabled: true, definitions: [{ type: 'web_search' }] },
+        },
+      },
+    })
+    const session = Session.create(SessionId('ptc-hook'))
+    const agent = { session, options: { provider: 'gateway', model: 'bridge-model' } } as Agent
+    const outerToken = Symbol('outer-run-code') as ToolExecutionToken
+    const nestedToken = Symbol('nested-search') as ToolExecutionToken
+    const outer = execution(RUN_CODE_NAME, outerToken, agent)
+    const nested = execution('web_search', nestedToken, agent, outerToken, { queries: ['nested query'] })
+    let delegated = false
+    const fallback: ToolExecutionResult = {
+      isError: true,
+      error: { message: 'delegated' },
+      content: [{ type: 'text', text: 'delegated' }],
+    }
+    const result = await ctx.waterfall(ctx as never, 'tools/execute', outer, async () => (
+      ctx.waterfall(ctx as never, 'tools/execute', nested, async () => {
+        delegated = true
+        return fallback
+      })
+    ))
+
+    expect(delegated).toBe(false)
+    expect(result).toMatchObject({ isError: false, value: { sources: [{ url: 'https://example.test/source' }] } })
+    expect((await server.body(0)).input).toEqual([{
+      role: 'user',
+      content: [{ type: 'input_text', text: 'Search the web for: nested query' }],
+    }])
+    await ctx.fiber.dispose()
+  })
+
+  it('intercepts the nested search on the agent-scoped tools waterfall', async () => {
+    vi.stubEnv('BRIDGE_TEST_KEY', 'test-key')
+    const server = await mockResponses(false)
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(Bridge, {
+      providers: {
+        gateway: {
+          apiKeyEnv: 'BRIDGE_TEST_KEY',
+          baseURL: server.url,
+          models: [{ id: 'bridge-model' }],
+          hostedTools: { enabled: true, definitions: [{ type: 'web_search' }] },
+        },
+      },
+    })
+    const session = Session.create(SessionId('ptc-hook-scoped'))
+    const agent = { session, options: { provider: 'gateway', model: 'bridge-model' } } as Agent
+    const outerToken = Symbol('outer-run-code-scoped') as ToolExecutionToken
+    const nestedToken = Symbol('nested-search-scoped') as ToolExecutionToken
+    const outer = execution(RUN_CODE_NAME, outerToken, agent)
+    const nested = execution('web_search', nestedToken, agent, outerToken, { queries: ['scoped query'] })
+    let delegated = false
+    const fallback: ToolExecutionResult = {
+      isError: true,
+      error: { message: 'delegated' },
+      content: [{ type: 'text', text: 'delegated' }],
+    }
+
+    const carrier = scopeTarget(ctx as never, agent)
+    const result = await ctx.waterfall(carrier, 'tools/execute', outer, async () => (
+      ctx.waterfall(carrier, 'tools/execute', nested, async () => {
+        delegated = true
+        return fallback
+      })
+    ))
+
+    expect(delegated).toBe(false)
+    expect(result).toMatchObject({ isError: false, value: { sources: [{ url: 'https://example.test/source' }] } })
+    await ctx.fiber.dispose()
+  })
+
+  it('delegates PTC nested search when hosted search is disabled', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(Bridge, {
+      providers: {
+        gateway: {
+          apiKeyEnv: 'BRIDGE_TEST_KEY',
+          baseURL: 'https://example.test/v1',
+          models: [{ id: 'bridge-model' }],
+          hostedTools: { enabled: false, definitions: [{ type: 'web_search' }] },
+        },
+      },
+    })
+    const session = Session.create(SessionId('ptc-hook-disabled'))
+    const agent = { session, options: { provider: 'gateway', model: 'bridge-model' } } as Agent
+    const outerToken = Symbol('outer-run-code-disabled') as ToolExecutionToken
+    const nestedToken = Symbol('nested-search-disabled') as ToolExecutionToken
+    const outer = execution(RUN_CODE_NAME, outerToken, agent)
+    const nested = execution('web_search', nestedToken, agent, outerToken, { queries: ['native query'] })
+    let delegated = false
+    const fallback: ToolExecutionResult = {
+      isError: false,
+      value: { content: 'native', sources: [], truncated: false },
+      content: [{ type: 'text', text: 'native' }],
+    }
+    const result = await ctx.waterfall(ctx as never, 'tools/execute', outer, async () => (
+      ctx.waterfall(ctx as never, 'tools/execute', nested, async () => {
+        delegated = true
+        return fallback
+      })
+    ))
+
+    expect(delegated).toBe(true)
+    expect(result).toEqual(fallback)
     await ctx.fiber.dispose()
   })
 })

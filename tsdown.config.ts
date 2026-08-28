@@ -11,8 +11,7 @@ const PLATFORM_MODULES = [
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-client-ui-slots',
   '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-schema-form',
-  '@deepseek-ai/dsh-client-runtime/client',
+  '@deepseek-ai/dsh-client-store',
 ]
 
 const CSS_PREFIX = '\0dsh-bridge-css:'
@@ -101,7 +100,9 @@ export default defineConfig([
       'import.meta.env.MODE': JSON.stringify(process.env.NODE_ENV ?? 'production'),
       'import.meta.env': JSON.stringify({ MODE: process.env.NODE_ENV ?? 'production' }),
     },
-    plugins: [cssModulesPlugin('llm-openai-responses-bridge')],
+    plugins: [
+      cssModulesPlugin('llm-openai-responses-bridge'),
+    ],
     outputOptions: {
       exports: 'named',
       entryFileNames: 'client.js',

@@ -1,7 +1,8 @@
 # dsh-openai-responses-bridge
 
 An independent DeepSeek Harness plugin for connecting third-party models through
-the OpenAI Responses protocol or the native Gemini Generative AI protocol.
+the OpenAI Responses protocol or the native Gemini Generative AI protocol. The
+current release targets DeepSeek Harness `0.1.2-alpha.1`.
 
 The DSH plugin id is `llm-openai-responses-bridge`. It works through DSH plugin
 interfaces and does not modify the DeepSeek Harness source tree.
@@ -19,6 +20,8 @@ interfaces and does not modify the DeepSeek Harness source tree.
   queries, citations, sources, and errors in a DSH conversation card.
 - Discover models from an OpenAI-compatible `/models` endpoint and select them
   before saving a provider.
+- Use the same provider in native mode and Code Mode/PTC without exposing a
+  second provider-specific search tool.
 - Store API keys through DSH credentials while keeping the settings file free
   of secret values.
 - Include the `dsh-pwsh-sandbox-schem` compatibility behavior in the same
@@ -61,6 +64,21 @@ other native request fields.
 When hosted search is disabled, the route uses Pi's native
 `openAIResponsesApi()` path directly.
 
+### Code Mode / PTC flow
+
+Code Mode exposes only DSH's existing `run_code` transport to the model. The
+Bridge does not register a second `web_search_openai` tool and does not modify
+the Code Mode implementation. While an outer `run_code` call is active, the
+Bridge observes nested `tools.web_search()` dispatches and, for an enabled
+Bridge OpenAI Responses route, sends a minimal hosted Responses request. The
+result is returned as the native DSH `web_search` value (`content`, `sources`,
+and `truncated`), so the Code Mode program keeps its existing SDK contract.
+
+With hosted search disabled, or when the active route is native, Google, or
+another provider, the nested dispatch calls DSH's normal `next()` path.
+`native`, `code`, and `both` therefore share the same provider setting without
+mixing provider-specific tool names.
+
 ### Gemini request flow
 
 Routes using `google-generative-ai` call Pi's native Gemini adapter and preserve
@@ -86,6 +104,11 @@ The section supports:
 The form writes the API key through `credentials.set`. YAML uses `apiKeyEnv` as
 the DSH credential reference; it is not a secret value and should not contain
 the key itself.
+
+Model discovery is an explicit one-shot request from the editor. For an OpenAI
+Responses provider, the Bridge sends `GET {baseURL}/models` with the draft key
+and returns model candidates without writing settings. Google providers use
+manual model entries because the Bridge does not probe Gemini's model catalog.
 
 ### Hosted search events
 
@@ -116,7 +139,7 @@ policy, executor, or filesystem authority.
 
 ## Requirements
 
-- DeepSeek Harness APIs from `0.1.1-rc.2`;
+- DeepSeek Harness `0.1.2-alpha.1` APIs;
 - an upstream service implementing either OpenAI Responses or native Gemini
   `generateContent`;
 - Node.js `^22.19.0` or `>=24.0.0` and pnpm `>=10` when building from source.
@@ -142,10 +165,14 @@ For local development:
 ```powershell
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git
 Set-Location dsh-openai-responses-bridge
-pnpm install --frozen-lockfile
+pnpm install --no-frozen-lockfile
 pnpm run build
 dsh plugin --profile web add (Get-Location).Path
 ```
+
+The source checkout targets DSH `0.1.2-alpha.1` only. Because this is a
+prerelease, source builds require matching DSH packages from a registry or a
+matching DSH build. The older `0.1.1-rc.2` API surface is not supported.
 
 Remove the plugin with:
 
@@ -241,10 +268,11 @@ key in `settings.yaml`, `.credentials.yaml`, source files, or static headers.
 | Tool | Behavior |
 | --- | --- |
 | `web_search`, `web_search_preview` | Supported for OpenAI Responses hosted passthrough and search-card events. |
+| `web_fetch` | Not registered by this plugin; source URLs are displayed as search metadata and are not fetched locally. |
 | `file_search` | Requires non-empty `vector_store_ids`; the remote endpoint must support it. |
 | `code_interpreter` | Remote passthrough only; no local DSH executor or continuation. |
 | `mcp`, `tool_search`, `namespace` | Remote definitions may pass through; secrets in definitions are rejected. |
-| `image_generation` | Refused in the current DSH `rc.2` integration because no safe image output backend is available. |
+| `image_generation` | Refused in DSH `0.1.2-alpha.1` because no safe image output backend is available. |
 | `computer`, `local_shell`, `shell`, `apply_patch`, `custom` | Refused because there is no DSH executor and approval continuation for these remote tools. |
 
 Hosted calls are remote calls. A remote code interpreter or MCP service does not

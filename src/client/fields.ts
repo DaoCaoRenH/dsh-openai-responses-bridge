@@ -1,11 +1,26 @@
-import type { SettingsNamespaceView, SettingsPathOpView } from '@deepseek-ai/dsh-api-remotes/client'
 import { BRIDGE_API_PROTOCOLS, DEFAULT_BRIDGE_API, DEFAULT_REASONING_EFFORTS } from '../types.ts'
 import type { BridgeApiProtocol, BridgeModelProfile, BridgeProviderProfile, HostedToolsConfig } from '../types.ts'
 import { validateBridgeModels } from './modelFields.ts'
 import type { BridgeModelDraft } from './modelFields.ts'
+import type { JsonValue, SettingsNamespaceView, SettingsPathOpView } from './remote.ts'
 
 /** The only settings namespace owned by the Bridge browser half. */
 export const BRIDGE_SETTINGS_NS = 'llm-openai-responses-bridge'
+
+/** Convert a profile draft into the lossless JSON vocabulary of the Remote API. */
+export function jsonValueOf(value: unknown): JsonValue {
+  if (value === null) return null
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
+  if (Array.isArray(value)) return value.map(item => item === undefined ? null : jsonValueOf(item))
+  if (typeof value === 'object') {
+    const result: { [key: string]: JsonValue } = {}
+    for (const [key, item] of Object.entries(value)) {
+      if (item !== undefined) result[key] = jsonValueOf(item)
+    }
+    return result
+  }
+  throw new TypeError('Bridge settings contain a value that cannot be serialized as JSON')
+}
 
 export interface ProviderDraft {
   route: string
@@ -160,7 +175,7 @@ export function providerEditOps(
     { op: 'set', path: [...base, 'displayName'], value: draft.displayName.trim() || route },
     { op: 'set', path: [...base, 'baseURL'], value: draft.baseURL.trim() },
     { op: 'set', path: [...base, 'api'], value: draft.api },
-    { op: 'set', path: [...base, 'models'], value: draft.models.map(modelProfileFromDraft) },
+    { op: 'set', path: [...base, 'models'], value: jsonValueOf(draft.models.map(modelProfileFromDraft)) },
   ]
   if (draft.apiKey.trim().length > 0 && profile.apiKeyEnv === undefined) {
     ops.push({ op: 'set', path: [...base, 'apiKeyEnv'], value: deriveApiKeyRef(route) })

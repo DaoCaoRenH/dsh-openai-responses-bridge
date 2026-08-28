@@ -12,6 +12,7 @@ import { discoverModels } from './discovery.ts'
 import { currentInitiatorSession, registerHostedWebSearchSessionEvents } from './hosted-web-search/session.ts'
 import { resolveProfiles } from './profiles.ts'
 import { applyPwshSandboxSchem } from './pwshSandboxSchem.ts'
+import { installPtcHostedWebSearch } from './ptc.ts'
 import type { BridgeConfig } from './types.ts'
 
 /** Cordis plugin identity; the bundle patch mounts this row by package name. */
@@ -92,7 +93,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
   // route may fall back to its credential reference without exposing the key
   // to the browser. This registration belongs to the Bridge namespace only and
   // does not add a protocol to native llm-pi-ai settings.
-  ctx.llm.registerModelDiscovery(NS, request => discoverModels(
+  ctx.llm.registerModelDiscovery(NS, (request, signal) => discoverModels(
     request,
     request.provider === undefined
       ? undefined
@@ -100,6 +101,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
           const profile = profiles().get(request.provider!)
           return profile === undefined ? undefined : resolveApiKey(request.provider!, profile)
         },
+    signal,
   ))
 
   const adapter = new PiAiAdapter({
@@ -108,6 +110,12 @@ export function apply(ctx: Context, config: BridgeConfig): void {
     auth: bridgeAuth(ctx),
     resolveAttachments: () => ctx.get('attachments'),
     onReplayDegrade: detail => ctx.logger.warn(`llm-openai-responses-bridge: replay degraded for ${detail.provider}/${detail.model}: ${detail.reason}`),
+  })
+
+  installPtcHostedWebSearch(ctx, {
+    current: () => current(),
+    profiles,
+    resolveApiKey,
   })
 
   let registration: AdapterRegistrationHandle | undefined

@@ -11,7 +11,6 @@
 
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import type { DiscoveredModelView, IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { DEFAULT_REASONING_EFFORTS } from '../types.ts'
 import type { BridgeModelProfile } from '../types.ts'
@@ -19,10 +18,12 @@ import { messageOf } from './store.ts'
 import type { BridgeKey } from './locales.ts'
 import { formatCapacity, parseCapacity } from './modelFields.ts'
 import type { BridgeModelDraft } from './modelFields.ts'
+import type { BridgeLlmRemote, LlmDiscoveredModel } from './remote.ts'
 import styles from './BridgeSection.module.css'
 
 export interface BridgeProbeTarget {
   settingsNs: string
+  provider?: string
   baseURL?: string
   api?: string
   apiKey?: string
@@ -33,7 +34,7 @@ export interface BridgeModelListEditorProps {
   onChange: (models: BridgeModelDraft[]) => void
   probe: BridgeProbeTarget
   probeBlocked?: string
-  api: Pick<IApiClient, 'llm'>
+  api: Pick<{ llm: BridgeLlmRemote }, 'llm'>
   t: (key: BridgeKey) => string
   disabled: boolean
 }
@@ -58,7 +59,7 @@ function inputModeOf(model: BridgeModelDraft): InputMode {
   return model.input?.includes('image') === true ? 'text-image' : 'text'
 }
 
-function adopt(candidate: DiscoveredModelView): BridgeModelDraft {
+function adopt(candidate: LlmDiscoveredModel): BridgeModelDraft {
   return {
     id: candidate.id,
     ...candidate.name === undefined ? {} : { name: candidate.name },
@@ -119,7 +120,7 @@ export function BridgeModelListEditor({
 }: BridgeModelListEditorProps): ReactNode {
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | undefined>(undefined)
-  const [candidates, setCandidates] = useState<readonly DiscoveredModelView[] | undefined>(undefined)
+  const [candidates, setCandidates] = useState<readonly LlmDiscoveredModel[] | undefined>(undefined)
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set())
   const [editing, setEditing] = useState<ReadonlyMap<string, string>>(new Map())
@@ -151,23 +152,26 @@ export function BridgeModelListEditor({
     setBusy(true)
     setFailure(undefined)
     try {
-      const response = await api.llm.discoverModels({
-        settingsNs: probe.settingsNs,
-        ...probe.baseURL === undefined || probe.baseURL.trim().length === 0 ? {} : { baseURL: probe.baseURL.trim() },
-        ...probe.api === undefined ? {} : { api: probe.api },
-        ...probe.apiKey === undefined || probe.apiKey.trim().length === 0 ? {} : { apiKey: probe.apiKey.trim() },
-      })
-      if (!response.result.ok) {
-        setFailure(response.result.error.message)
+      const response = await api.llm.discoverModels(
+        probe.settingsNs,
+        {
+          ...probe.provider === undefined ? {} : { provider: probe.provider },
+          ...probe.baseURL === undefined || probe.baseURL.trim().length === 0 ? {} : { baseURL: probe.baseURL.trim() },
+          ...probe.api === undefined ? {} : { api: probe.api },
+          ...probe.apiKey === undefined || probe.apiKey.trim().length === 0 ? {} : { apiKey: probe.apiKey.trim() },
+        },
+      )
+      if (!response.ok) {
+        setFailure(response.error.message)
         return
       }
-      if (response.result.value.models.length === 0) {
+      if (response.value.length === 0) {
         setFailure(t('fetchEmpty'))
         return
       }
       const known = new Set(models.map(model => textOf(model, 'id')))
-      setCandidates(response.result.value.models)
-      setPicked(new Set(response.result.value.models.filter(model => !known.has(model.id)).map(model => model.id)))
+      setCandidates(response.value)
+      setPicked(new Set(response.value.filter(model => !known.has(model.id)).map(model => model.id)))
     } catch (error) {
       setFailure(messageOf(error))
     } finally {

@@ -20,7 +20,7 @@ export interface HostedToolsConfig {
     definitions?: OpenAIResponsesTool[];
     toolChoice?: ResponsesToolChoice;
     include?: string[];
-    /** Legacy persisted setting; native Pi owns citation presentation. */
+    /** Persisted setting retained while native Pi owns citation presentation. */
     sourcePresentation?: HostedSourcePresentation;
     imageGeneration?: {
         enabled?: boolean;

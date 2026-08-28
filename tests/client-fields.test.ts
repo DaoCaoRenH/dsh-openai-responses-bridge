@@ -51,13 +51,13 @@ describe('Bridge settings card fields', () => {
     expect(draft).not.toHaveProperty('reasoning')
     expect(draft.models[0]?.reasoningEfforts).toBe(false)
 
-    const legacyDraft = providerDraftFromProfile('legacy', {
-      apiKeyEnv: 'LEGACY_KEY',
+    const defaultDraft = providerDraftFromProfile('default', {
+      apiKeyEnv: 'DEFAULT_KEY',
       baseURL: 'https://example.test/v1',
-      models: [{ id: 'legacy-model' }],
+      models: [{ id: 'default-model' }],
     })
-    expect(legacyDraft.api).toBe('openai-responses')
-    expect(legacyDraft.models[0]?.reasoningEfforts).toEqual(DEFAULT_REASONING_EFFORTS)
+    expect(defaultDraft.api).toBe('openai-responses')
+    expect(defaultDraft.models[0]?.reasoningEfforts).toEqual(DEFAULT_REASONING_EFFORTS)
 
     const ops = providerEditOps('gateway', original, {
       ...draft,

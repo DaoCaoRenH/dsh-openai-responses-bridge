@@ -5,6 +5,7 @@ import {
   StateDot,
   WebBlock,
 } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { WebBlockLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HostedWebSearchChatData } from './HostedWebSearchDefinition.ts'
 import css from './HostedWebSearchCard.module.css'
 
@@ -41,7 +42,7 @@ function sourceViews(data: HostedWebSearchChatData): Array<{
   return result
 }
 
-export function HostedWebSearchCard({ data }: { data: HostedWebSearchChatData }) {
+export function HostedWebSearchCard({ data, labels }: { data: HostedWebSearchChatData; labels: WebBlockLabels }) {
   const [open, setOpen] = useState(false)
   const sources = sourceViews(data)
   const query = data.queries.at(-1)
@@ -83,7 +84,7 @@ export function HostedWebSearchCard({ data }: { data: HostedWebSearchChatData })
       >
         <div className={css.body}>
           <div className={css.meta}>{data.provider} · {data.model}</div>
-          <WebBlock kind="search" sources={sources} truncated={data.truncated === true} />
+          <WebBlock kind="search" labels={labels} sources={sources} truncated={data.truncated === true} />
           {data.error !== undefined && <p className={css.error}>{data.error.message}</p>}
         </div>
       </DisclosureRow>

@@ -1,5 +1,5 @@
 /** Browser half of the independent OpenAI third-party-model settings plugin. */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 export declare const inject: string[];
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface LocaleNamespaceMap {

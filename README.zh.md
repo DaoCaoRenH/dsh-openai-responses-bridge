@@ -1,7 +1,8 @@
 # dsh-openai-responses-bridge
 
 面向 DeepSeek Harness 的独立插件，用于接入第三方 OpenAI Responses 服务和
-Gemini 原生 Generative AI 服务。
+Gemini 原生 Generative AI 服务。当前版本只适配 DeepSeek Harness
+`0.1.2-alpha.1`。
 
 DSH 插件 ID 为 `llm-openai-responses-bridge`。插件通过 DSH 的插件接口工作，
 不修改 DeepSeek Harness 宿主源码。
@@ -16,6 +17,7 @@ DSH 插件 ID 为 `llm-openai-responses-bridge`。插件通过 DSH 的插件接�
 - 可选透传远端 Responses `web_search`，并在 DSH 对话中显示搜索状态、查询、
   citation、来源和错误；
 - 从 OpenAI 兼容的 `/models` 接口获取模型，并在保存前选择模型；
+- 普通模式与 Code Mode/PTC 共用同一个 provider，不暴露额外的 provider 专用搜索工具；
 - 通过 DSH credentials 保存 API 密钥，配置文件中不保存密钥值；
 - 内置 `dsh-pwsh-sandbox-schem` 兼容行为，不需要再安装第二个 shim 插件；
 - provider 配置支持热加载，不需要修改 DSH 宿主源码。
@@ -49,6 +51,19 @@ Bridge 不注入联网搜索系统提示词，也不修改 `max_tokens`、`text`
 
 关闭 hosted search 时，route 直接使用 Pi 原生 `openAIResponsesApi()`。
 
+### Code Mode / PTC 流程
+
+Code Mode 只向模型暴露 DSH 已有的 `run_code` transport。Bridge 不注册新的
+`web_search_openai` 工具，也不修改 Code Mode 实现。在外层 `run_code` 调用活动期间，
+Bridge 观察嵌套的 `tools.web_search()` dispatch；当当前 route 是已启用 hosted search
+的 Bridge OpenAI Responses provider 时，发送一个最小的 Responses hosted 搜索请求。
+结果会转换为 DSH 原生 `web_search` 值（`content`、`sources`、`truncated`），所以
+Code Mode SDK 的调用契约保持不变。
+
+关闭 hosted search，或当前 route 是原生 provider、Google provider 或其它 provider 时，
+嵌套 dispatch 会继续调用 DSH 的 `next()` 原生路径。这样 `native`、`code` 和 `both`
+三种模式共用同一个 provider 设置，不会混用 provider 专用工具名。
+
 ### Gemini 请求流程
 
 `google-generative-ai` route 直接使用 Pi 原生 Gemini 适配器，保留 Gemini 原生
@@ -72,6 +87,10 @@ API 协议下拉框。
 
 表单通过 `credentials.set` 写入 API 密钥。YAML 中的 `apiKeyEnv` 是 DSH
 credential reference，不是密钥值，不能直接填写 API 密钥。
+
+模型获取是编辑器发起的一次性请求。对于 OpenAI Responses provider，Bridge 会使用
+草稿中的 API 地址和密钥发送 `GET {baseURL}/models`，只返回候选模型，不写入设置。
+Google provider 不通过 Bridge 探测 Gemini 模型目录，需要手动填写模型。
 
 ### Hosted 搜索事件
 
@@ -98,7 +117,7 @@ schema，并只从副本中移除 `sandbox_permissions` 和 `justification`。
 
 ## 前置条件
 
-- DeepSeek Harness `0.1.1-rc.2` 相关 API；
+- DeepSeek Harness `0.1.2-alpha.1` 相关 API；
 - 上游服务实现 OpenAI Responses 或 Gemini 原生 `generateContent`；
 - 从源码构建时需要 Node.js `^22.19.0` 或 `>=24.0.0`，以及 pnpm `>=10`。
 
@@ -122,10 +141,14 @@ dsh plugin --profile web add 'github:DaoCaoRenH/dsh-openai-responses-bridge#<com
 ```powershell
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git
 Set-Location dsh-openai-responses-bridge
-pnpm install --frozen-lockfile
+pnpm install --no-frozen-lockfile
 pnpm run build
 dsh plugin --profile web add (Get-Location).Path
 ```
+
+源码只适配 DSH `0.1.2-alpha.1`。由于这是预发布版本，从源码构建时需要使用
+registry 中的匹配 DSH 包，或使用匹配版本的 DSH 构建产物。本项目不支持旧的
+`0.1.1-rc.2` API。
 
 卸载插件：
 
@@ -219,10 +242,11 @@ API 密钥应保存在 DSH credentials 或启动环境中。不要把密钥放�
 | Tool | 行为 |
 | --- | --- |
 | `web_search`、`web_search_preview` | 支持 OpenAI Responses hosted 透传，并生成搜索卡片事件。 |
+| `web_fetch` | 本插件不注册该工具；搜索来源只作为元数据展示，不会在本地抓取。 |
 | `file_search` | 必须提供非空 `vector_store_ids`，且上游需要支持该工具。 |
 | `code_interpreter` | 仅远端透传，不提供本地 DSH executor 或 continuation。 |
 | `mcp`、`tool_search`、`namespace` | 可以透传远端 definition，但会拒绝 definition 中的 secret。 |
-| `image_generation` | 当前 DSH `rc.2` 没有安全的图片输出 backend，因此拒绝。 |
+| `image_generation` | DSH `0.1.2-alpha.1` 没有安全的图片输出 backend，因此拒绝。 |
 | `computer`、`local_shell`、`shell`、`apply_patch`、`custom` | 没有 DSH executor 和审批 continuation，因此拒绝。 |
 
 Hosted call 永远是远端调用。远端 code interpreter 或 MCP 服务不会获得本地文件系统、

@@ -19,6 +19,8 @@ describe('built DSH Client bundle composition', () => {
 
     const source = await readFile(resolve('lib/client.js'), 'utf8')
     expect(source).not.toContain('@deepseek-ai/dsh-client-web-react')
+    expect(source).toContain('@deepseek-ai/dsh-client-store')
+    expect(source).not.toContain('@deepseek-ai/dsh-client-runtime/client')
     let loaded: LoadedBundle | undefined
     const previousWindow = (globalThis as { window?: unknown }).window
     ;(globalThis as { window?: unknown }).window = {
@@ -32,7 +34,7 @@ describe('built DSH Client bundle composition', () => {
     }
     expect(loaded?.id).toBe('dsh-openai-responses-bridge')
     const exported = loaded!.factory((id: string) => {
-      if (id === '@deepseek-ai/dsh-client-runtime/client') return {
+      if (id === '@deepseek-ai/dsh-client-store') return {
         createSnapshotStore: <T>(initial: T) => ({
           getSnapshot: () => initial,
           subscribe: () => () => undefined,
@@ -49,19 +51,19 @@ describe('built DSH Client bundle composition', () => {
 
     const registrations: Array<{ options: { id?: string; key?: string; label?: () => string; locale?: string }; component: unknown }> = []
     const context = {
-      get: (name: string) => name === 'connection' ? {
-        api: {
-          settings: { describe: async () => ({ result: { ok: true, value: { writable: true, hasDocument: true, namespaces: [] } } }) },
-          credentials: { describe: async () => ({ result: { ok: true, value: { credentials: {} } } }) },
-          llm: { providers: async () => ({ result: { ok: true, value: { providers: [] } } }) },
-        },
+      get: (name: string) => name === 'uiConversation' ? {
+        events: { register: () => () => undefined },
       } : undefined,
       locale: {
         register: () => undefined,
           bind: () => (key: string) => key === 'nav' ? '第三方模型' : key,
       },
-      remote: { $on: () => () => undefined },
-      conversationEvents: { register: () => () => undefined },
+      remote: {
+        settings: { describe: async () => ({ ok: true, value: { writable: true, hasDocument: true, namespaces: [] } }) },
+        credentials: { describe: async () => ({ ok: true, value: {} }) },
+        llm: { listProviders: async () => ({ ok: true, value: [] }) },
+        $on: () => () => undefined,
+      },
       on: () => () => undefined,
       effect: (fn: () => unknown) => fn(),
       slots: {

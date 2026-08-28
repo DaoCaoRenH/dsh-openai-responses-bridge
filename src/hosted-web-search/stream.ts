@@ -1,4 +1,3 @@
-import OpenAI from 'openai'
 import type { ResponseCreateParamsStreaming, ResponseStreamEvent } from 'openai/resources/responses/responses.js'
 import {
   clampThinkingLevel,
@@ -24,11 +23,11 @@ import {
   activeTurnStep,
   appendHostedWebSearchCheckpoint,
 } from './session.ts'
+import { createResponsesClient, responseHeaders } from './transport.ts'
+import type { SessionAffinityFormat } from './transport.ts'
 
 const OPENAI_TOOL_CALL_PROVIDERS = new Set(['openai', 'openai-codex', 'opencode'])
 const OPENAI_RESPONSES_MIN_OUTPUT_TOKENS = 16
-
-type SessionAffinityFormat = 'openai' | 'openai-nosession' | 'openrouter'
 
 interface ResponsesCompatOptions {
   sessionAffinityFormat?: SessionAffinityFormat
@@ -48,49 +47,6 @@ interface ExtendedStreamOptions extends StreamOptions {
 export interface HostedResponsesStreamConfig {
   hostedTools: HostedToolsConfig | undefined
   resolveSession: () => Session | undefined
-}
-
-function hasHeader(headers: Record<string, string | null> | undefined, name: string): boolean {
-  if (headers === undefined) return false
-  const expected = name.toLowerCase()
-  return Object.entries(headers).some(([key, value]) => key.toLowerCase() === expected && value !== null && value.trim().length > 0)
-}
-
-function apiKeyFor(model: Model<Api>, options: StreamOptions | undefined): string {
-  if (options?.apiKey !== undefined && options.apiKey.length > 0) return options.apiKey
-  if (hasHeader(options?.headers, 'authorization') || hasHeader(options?.headers, 'cf-aig-authorization')) return 'unused'
-  throw new Error(`No API key for provider: ${model.provider}`)
-}
-
-function sessionAffinityFormat(model: Model<Api>): SessionAffinityFormat {
-  const compat = model.compat as ResponsesCompatOptions | undefined
-  if (compat?.sessionAffinityFormat !== undefined) return compat.sessionAffinityFormat
-  return model.provider === 'openrouter' || model.baseUrl.includes('openrouter.ai') ? 'openrouter' : 'openai'
-}
-
-function headersOf(response: Response): Record<string, string> {
-  return Object.fromEntries(response.headers.entries())
-}
-
-function createClient(model: Model<Api>, options: StreamOptions | undefined, session: string | undefined): OpenAI {
-  const headers: Record<string, string | null> = { ...model.headers }
-  const affinity = sessionAffinityFormat(model)
-  if (session !== undefined) {
-    if (affinity === 'openrouter') headers['x-session-id'] = session
-    else if (affinity === 'openai') {
-      headers.session_id = session
-      headers['x-client-request-id'] = session
-    } else headers['x-client-request-id'] = session
-  }
-  // Match Pi's native ordering: per-request headers override model defaults and
-  // session-affinity defaults when a caller explicitly supplies the same key.
-  Object.assign(headers, options?.headers)
-  return new OpenAI({
-    apiKey: apiKeyFor(model, options),
-    baseURL: model.baseUrl,
-    dangerouslyAllowBrowser: true,
-    defaultHeaders: headers,
-  })
 }
 
 function buildParams(model: Model<Api>, context: Context, options: ExtendedStreamOptions | undefined): Record<string, unknown> {
@@ -220,7 +176,11 @@ export function hostedResponsesStream(
       timestamp: Date.now(),
     }
     try {
-      const client = createClient(model, options, options?.sessionId)
+      const client = createResponsesClient(model, {
+        ...options?.apiKey === undefined ? {} : { apiKey: options.apiKey },
+        ...options?.headers === undefined ? {} : { headers: options.headers },
+        ...options?.sessionId === undefined ? {} : { session: options.sessionId },
+      })
       const rawParams = buildParams(model, context, options)
       const replacement = await options?.onPayload?.(rawParams, model)
       const params = (replacement ?? rawParams) as ResponseCreateParamsStreaming
@@ -230,7 +190,7 @@ export function hostedResponsesStream(
         maxRetries: 0,
       }
       const { data, response } = await client.responses.create(params, requestOptions).withResponse()
-      await options?.onResponse?.({ status: response.status, headers: headersOf(response) }, model)
+      await options?.onResponse?.({ status: response.status, headers: responseHeaders(response) }, model)
       stream.push({ type: 'start', partial: output })
       const compat = model.compat as ResponsesCompatOptions | undefined
       await processResponsesStream(

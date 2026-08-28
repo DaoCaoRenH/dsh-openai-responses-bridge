@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { IApiClient, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import {
   BRIDGE_SETTINGS_NS, initialProviderDraft, providerDraftFromProfile, providerEditOps,
-  providerProfileFromDraft, validateProviderDraft,
+  jsonValueOf, providerProfileFromDraft, validateProviderDraft,
 } from './fields.ts'
 import type { ProviderDraft } from './fields.ts'
 import type { BridgeProviderProfile } from '../types.ts'
@@ -11,13 +10,14 @@ import type { BridgeApiProtocol } from '../types.ts'
 import { BridgeModelListEditor } from './BridgeModelListEditor.tsx'
 import type { BridgeModelDraft } from './modelFields.ts'
 import type { BridgeKey } from './locales.ts'
+import type { BridgeRemoteApi, SettingsNamespaceView } from './remote.ts'
 import styles from './BridgeSection.module.css'
 
 interface AddCustomProviderCardProps {
   namespace: SettingsNamespaceView
   existingRoutes: readonly string[]
   writable: boolean
-  api: Pick<IApiClient, 'settings' | 'credentials' | 'llm'>
+  api: BridgeRemoteApi
   t: (key: BridgeKey) => string
   mode?: 'create' | 'edit'
   route?: string
@@ -75,19 +75,19 @@ export function AddCustomProviderCard({
     try {
       const draftProfile = providerProfileFromDraft(draft)
       if (!committed) {
-        const response = await api.settings.mutate({
-          ns: namespace.ns,
-          ops: editing
+        const response = await api.settings.mutate(
+          namespace.ns,
+          editing
             ? providerEditOps(draft.route.trim(), existingProfile!, draft)
             : [{
                 op: 'set',
                 path: ['providers', draft.route.trim()],
-                value: draftProfile,
+                value: jsonValueOf(draftProfile),
               }],
-          expectedRevision: namespace.revision,
-        })
-        if (!response.result.ok) {
-          setFailure(response.result.error.code === 'settings-conflict' ? t('conflict') : response.result.error.message)
+          namespace.revision,
+        )
+        if (!response.ok) {
+          setFailure(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
           return
         }
         // A retry after credential failure must not repeat the settings write
@@ -99,9 +99,9 @@ export function AddCustomProviderCard({
         const ref = editing
           ? existingProfile?.apiKeyEnv ?? draftProfile.apiKeyEnv
           : draftProfile.apiKeyEnv
-        const stored = await api.credentials.set({ ref: ref!, value: draft.apiKey.trim() })
-        if (!stored.result.ok) {
-          setFailure(t('savedWithCredentialFailure').replace('{error}', stored.result.error.message))
+        const stored = await api.credentials.set(ref!, draft.apiKey.trim())
+        if (!stored.ok) {
+          setFailure(t('savedWithCredentialFailure').replace('{error}', stored.error.message))
           return
         }
       }
@@ -221,6 +221,7 @@ export function AddCustomProviderCard({
           onChange={changeModels}
           probe={{
             settingsNs: BRIDGE_SETTINGS_NS,
+            ...editing && route !== undefined ? { provider: route } : {},
             baseURL: draft.baseURL,
             api: googleProtocol ? 'google-generative-ai' : 'openai-responses-bridge',
             ...draft.apiKey.trim().length === 0 ? {} : { apiKey: draft.apiKey },

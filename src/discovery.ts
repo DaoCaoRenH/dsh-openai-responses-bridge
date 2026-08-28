@@ -130,6 +130,7 @@ function usableProbeKey(raw: string): string {
 export async function discoverModels(
   request: LlmModelDiscoveryRequest,
   storedApiKey?: () => Promise<string | undefined>,
+  signal?: AbortSignal,
 ): Promise<readonly LlmDiscoveredModel[]> {
   if (request.baseURL === undefined || request.baseURL.trim().length === 0) {
     throw new LlmError('Bridge model discovery needs a non-empty baseURL', 'INVALID_DISCOVERY')
@@ -144,6 +145,7 @@ export async function discoverModels(
   }
 
   const url = listingUrl(request.baseURL.trim())
+  const requestSignal = signal
   const supplied = request.apiKey ?? await storedApiKey?.()
   const apiKey = supplied === undefined ? undefined : usableProbeKey(supplied)
   let response: Response
@@ -155,10 +157,10 @@ export async function discoverModels(
         ...apiKey === undefined ? {} : { authorization: `Bearer ${apiKey}` },
         ...attributionHeaders(),
       },
-      ...request.signal === undefined ? {} : { signal: request.signal },
+      ...requestSignal === undefined ? {} : { signal: requestSignal },
     })
   } catch (error: unknown) {
-    if (request.signal?.aborted) throw new LlmError('Bridge model discovery was aborted', 'ABORTED', { cause: error })
+    if (requestSignal?.aborted) throw new LlmError('Bridge model discovery was aborted', 'ABORTED', { cause: error })
     throw new LlmError(`could not reach ${url}`, 'DISCOVERY_FAILED', { cause: error })
   }
   if (!response.ok) {
@@ -173,7 +175,7 @@ export async function discoverModels(
   try {
     text = await readBounded(response, url)
   } catch (error: unknown) {
-    if (request.signal?.aborted) throw new LlmError('Bridge model discovery was aborted', 'ABORTED', { cause: error })
+    if (requestSignal?.aborted) throw new LlmError('Bridge model discovery was aborted', 'ABORTED', { cause: error })
     throw error
   }
   let body: unknown
