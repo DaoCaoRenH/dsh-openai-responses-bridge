@@ -160,19 +160,27 @@ reproducible:
 dsh plugin --profile web add 'github:DaoCaoRenH/dsh-openai-responses-bridge#<commit-sha>'
 ```
 
-For local development:
+For source development against the target DSH release, place the plugin in a
+temporary package directory inside a matching DSH checkout:
 
 ```powershell
-git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git
-Set-Location dsh-openai-responses-bridge
-pnpm install --no-frozen-lockfile
+git clone --branch dsh-v0.1.2-alpha.1 https://github.com/deepseek-ai/deepseek-harness.git
+New-Item -ItemType Directory -Force deepseek-harness/packages/bridge | Out-Null
+git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git deepseek-harness/packages/bridge/dsh-openai-responses-bridge
+Set-Location deepseek-harness
+pnpm install --no-frozen-lockfile --ignore-scripts
+pnpm run build:lib
+Set-Location packages/bridge/dsh-openai-responses-bridge
+pnpm run check
 pnpm run build
-dsh plugin --profile web add (Get-Location).Path
 ```
 
 The source checkout targets DSH `0.1.2-alpha.1` only. Because this is a
 prerelease, source builds require matching DSH packages from a registry or a
 matching DSH build. The older `0.1.1-rc.2` API surface is not supported.
+
+For normal use, install the reviewed GitHub ref with the DSH plugin manager
+instead of installing the unreleased DSH peer packages separately.
 
 Remove the plugin with:
 

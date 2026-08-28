@@ -14,7 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Check out matching DSH
+        uses: actions/checkout@v5
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: dsh-v0.1.2-alpha.1
+          path: .ci/deepseek-harness
+          fetch-depth: 1
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -22,21 +30,36 @@ jobs:
           version: 11.7.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24.x
           cache: pnpm
+          cache-dependency-path: .ci/deepseek-harness/pnpm-lock.yaml
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+      - name: Install matching DSH workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          dsh_root="$GITHUB_WORKSPACE/.ci/deepseek-harness"
+          bridge_root="$dsh_root/packages/bridge/dsh-openai-responses-bridge"
+          mkdir -p "$bridge_root"
+          git -C "$GITHUB_WORKSPACE" archive --format=tar HEAD | tar -x -C "$bridge_root"
+          pnpm --dir "$dsh_root" install --no-frozen-lockfile --ignore-scripts
+
+      - name: Build matching DSH libraries
+        run: pnpm --dir .ci/deepseek-harness run build:lib
 
       - name: Run checks
-        run: pnpm run check
+        run: pnpm --dir .ci/deepseek-harness/packages/bridge/dsh-openai-responses-bridge run check
 
       - name: Build bundle
-        run: pnpm run build
+        run: pnpm --dir .ci/deepseek-harness/packages/bridge/dsh-openai-responses-bridge run build
 
       - name: Verify generated output
+        shell: bash
         run: |
+          set -euo pipefail
           git diff --check
-          git diff --exit-code -- lib
+          diff -ru \
+            "$GITHUB_WORKSPACE/lib" \
+            "$GITHUB_WORKSPACE/.ci/deepseek-harness/packages/bridge/dsh-openai-responses-bridge/lib"

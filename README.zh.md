@@ -136,19 +136,27 @@ Gemini route 应填写包含原生版本路径的地址，例如
 dsh plugin --profile web add 'github:DaoCaoRenH/dsh-openai-responses-bridge#<commit-sha>'
 ```
 
-本地开发安装：
+针对目标 DSH 版本进行源码开发时，请将插件放入匹配版本 DSH checkout
+中的临时 workspace package 目录：
 
 ```powershell
-git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git
-Set-Location dsh-openai-responses-bridge
-pnpm install --no-frozen-lockfile
+git clone --branch dsh-v0.1.2-alpha.1 https://github.com/deepseek-ai/deepseek-harness.git
+New-Item -ItemType Directory -Force deepseek-harness/packages/bridge | Out-Null
+git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git deepseek-harness/packages/bridge/dsh-openai-responses-bridge
+Set-Location deepseek-harness
+pnpm install --no-frozen-lockfile --ignore-scripts
+pnpm run build:lib
+Set-Location packages/bridge/dsh-openai-responses-bridge
+pnpm run check
 pnpm run build
-dsh plugin --profile web add (Get-Location).Path
 ```
 
 源码只适配 DSH `0.1.2-alpha.1`。由于这是预发布版本，从源码构建时需要使用
 registry 中的匹配 DSH 包，或使用匹配版本的 DSH 构建产物。本项目不支持旧的
 `0.1.1-rc.2` API。
+
+正常使用时，建议直接通过 DSH 插件管理器安装经过审查的 GitHub ref，
+不需要单独安装尚未发布的 DSH peer 包。
 
 卸载插件：
 

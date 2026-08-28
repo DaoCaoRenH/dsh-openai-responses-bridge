@@ -8,17 +8,24 @@ Thanks for helping improve `dsh-openai-responses-bridge`.
 - pnpm `>=10`;
 - a DeepSeek Harness `0.1.2-alpha.1` development environment for integration work.
 
-Install dependencies from the repository root:
+The plugin targets the DSH `0.1.2-alpha.1` prerelease, whose packages may not be
+available from a public registry yet. For integration development, check out
+the matching DSH tag and place this repository under its workspace:
 
 ~~~powershell
+git clone --branch dsh-v0.1.2-alpha.1 https://github.com/deepseek-ai/deepseek-harness.git
+New-Item -ItemType Directory -Force deepseek-harness/packages/bridge | Out-Null
+git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git deepseek-harness/packages/bridge/dsh-openai-responses-bridge
+Set-Location deepseek-harness
 pnpm install --no-frozen-lockfile
+pnpm run build:lib
+Set-Location packages/bridge/dsh-openai-responses-bridge
+pnpm run check
+pnpm run build
 ~~~
 
-The current DSH `0.1.2-alpha.1` packages are developed in a companion DSH
-workspace and are not yet available from the configured npm registry. Use that
-workspace's built packages for local type checking and bundle generation.
-Regenerate and commit a lockfile after the DSH packages are published; do not
-restore a lockfile for a retired DSH release.
+CI uses the same workspace layout. Do not copy DSH source packages into this
+repository or commit the DSH workspace's generated files here.
 
 ## Required checks
 
