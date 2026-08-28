@@ -47,13 +47,47 @@ jobs:
           pnpm --dir "$dsh_root" install --no-frozen-lockfile --ignore-scripts
 
       - name: Build matching DSH libraries
-        run: pnpm --dir .ci/deepseek-harness run build:lib
+        shell: bash
+        working-directory: .ci/deepseek-harness
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+          import { spawnSync } from 'node:child_process'
+          import ts from 'typescript'
+
+          const parsed = ts.readConfigFile('tsconfig.host.json', path => readFileSync(path, 'utf8'))
+          if (parsed.error !== undefined) {
+            console.error(ts.formatDiagnosticsWithColorAndContext([parsed.error], {
+              getCanonicalFileName: fileName => fileName,
+              getCurrentDirectory: () => process.cwd(),
+              getNewLine: () => '\n',
+            }))
+            process.exit(1)
+          }
+          const references = parsed.config?.references?.map(reference => reference.path) ?? []
+          if (references.length === 0) throw new Error('tsconfig.host.json has no project references')
+          const result = spawnSync(process.execPath, [
+            '--max-old-space-size=4096',
+            './node_modules/typescript/bin/tsc',
+            '-b',
+            '--force',
+            ...references,
+          ], { stdio: 'inherit' })
+          if (result.error !== undefined) throw result.error
+          process.exit(result.status ?? 1)
+          NODE
+          pnpm exec tsdown --env.DSH_BUILD_FACE host
+          pnpm exec tsc -b tsconfig.client.json --force
+          pnpm exec tsdown --env.DSH_BUILD_FACE client
 
       - name: Run checks
-        run: pnpm --dir .ci/deepseek-harness/packages/bridge/dsh-openai-responses-bridge run check
+        working-directory: .ci/deepseek-harness
+        run: pnpm --filter dsh-openai-responses-bridge run check
 
       - name: Build bundle
-        run: pnpm --dir .ci/deepseek-harness/packages/bridge/dsh-openai-responses-bridge run build
+        working-directory: .ci/deepseek-harness
+        run: pnpm --filter dsh-openai-responses-bridge run build
 
       - name: Verify generated output
         shell: bash
