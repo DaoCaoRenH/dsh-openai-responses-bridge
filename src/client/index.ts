@@ -1,6 +1,7 @@
 /** Browser half of the independent OpenAI third-party-model settings plugin. */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
@@ -42,7 +43,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => {
     const refresh = (): void => { refreshIfLoaded(controller) }
     const disposers = [
-      ctx.remote.$on('settings/document-updated', (ns) => {
+      ctx.remote.$on('settings/document-updated', (ns: string) => {
         if (ns === 'llm-openai-responses-bridge') refresh()
       }),
       ctx.remote.$on('credentials/reference-updated', refresh),

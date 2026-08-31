@@ -6,14 +6,14 @@ Thanks for helping improve `dsh-openai-responses-bridge`.
 
 - Node.js `^22.19.0` or `>=24.0.0`;
 - pnpm `>=10`;
-- a DeepSeek Harness `0.1.2-alpha.1` development environment for integration work.
+- a DeepSeek Harness `0.1.2-alpha.2` development environment for integration work.
 
-The plugin targets the DSH `0.1.2-alpha.1` prerelease, whose packages may not be
+The plugin targets the DSH `0.1.2-alpha.2` prerelease, whose packages may not be
 available from a public registry yet. For integration development, check out
 the matching DSH tag and place this repository under its workspace:
 
 ~~~powershell
-git clone --branch dsh-v0.1.2-alpha.1 https://github.com/deepseek-ai/deepseek-harness.git
+git clone --branch dsh-v0.1.2-alpha.2 https://github.com/deepseek-ai/deepseek-harness.git
 New-Item -ItemType Directory -Force deepseek-harness/packages/bridge | Out-Null
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git deepseek-harness/packages/bridge/dsh-openai-responses-bridge
 Set-Location deepseek-harness

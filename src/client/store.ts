@@ -91,7 +91,9 @@ export class BridgeSettingsStore {
       ])
       if (!settingsResponse.ok) throw new Error(settingsResponse.error.message)
       const settingsValue = settingsResponse.value
-      const namespace = settingsValue.namespaces.find(view => view.ns === BRIDGE_SETTINGS_NS)
+      const namespace = settingsValue.namespaces.find(
+        (view: SettingsNamespaceView) => view.ns === BRIDGE_SETTINGS_NS,
+      )
       if (namespace === undefined) {
         if (generation !== this.generation) return
         this.store.update(state => {

@@ -1,5 +1,6 @@
-import type { CredentialInfo, JsonValue, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
+import type { CredentialInfo, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { describe, expect, it, vi } from 'vitest'
+import type { JsonValue } from '../src/types.ts'
 
 vi.mock('@deepseek-ai/dsh-client-store', () => ({
   createSnapshotStore: <T>(initial: T) => {

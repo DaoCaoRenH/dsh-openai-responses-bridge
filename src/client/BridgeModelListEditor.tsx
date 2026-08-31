@@ -171,7 +171,11 @@ export function BridgeModelListEditor({
       }
       const known = new Set(models.map(model => textOf(model, 'id')))
       setCandidates(response.value)
-      setPicked(new Set(response.value.filter(model => !known.has(model.id)).map(model => model.id)))
+      setPicked(new Set(
+        response.value
+          .filter((model: LlmDiscoveredModel) => !known.has(model.id))
+          .map((model: LlmDiscoveredModel) => model.id),
+      ))
     } catch (error) {
       setFailure(messageOf(error))
     } finally {

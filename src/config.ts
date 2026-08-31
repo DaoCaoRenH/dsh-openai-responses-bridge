@@ -164,7 +164,7 @@ export function assertServiceable(config: BridgeConfig): void {
     if (hosted?.imageGeneration?.enabled === true) {
       // The current public DSH LLM stream vocabulary has no safe assistant-image
       // output backend. Refuse the setting rather than writing arbitrary paths.
-      throw new Error(`llm-openai-responses-bridge: provider "${route}" imageGeneration requires a verified DSH assistant-image output backend; none is available in DSH 0.1.2-alpha.1`)
+      throw new Error(`llm-openai-responses-bridge: provider "${route}" imageGeneration requires a verified DSH assistant-image output backend; none is available in DSH 0.1.2-alpha.2`)
     }
     if (hosted?.imageGeneration?.maxBytes !== undefined && (!Number.isSafeInteger(hosted.imageGeneration.maxBytes) || hosted.imageGeneration.maxBytes <= 0)) throw new Error(`llm-openai-responses-bridge: provider "${route}" imageGeneration.maxBytes must be a positive safe integer`)
     if (source.streamIdleTimeoutMs !== undefined && (!Number.isSafeInteger(source.streamIdleTimeoutMs) || source.streamIdleTimeoutMs <= 0)) throw new Error(`llm-openai-responses-bridge: provider "${route}" streamIdleTimeoutMs must be a positive safe integer`)

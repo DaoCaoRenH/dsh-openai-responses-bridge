@@ -87,7 +87,7 @@ export function AddCustomProviderCard({
           namespace.revision,
         )
         if (!response.ok) {
-          setFailure(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
+          setFailure(response.error.code === 'settings/conflict' ? t('conflict') : response.error.message)
           return
         }
         // A retry after credential failure must not repeat the settings write

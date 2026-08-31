@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的独立插件，用于接入第三方 OpenAI Responses 服务和
 Gemini 原生 Generative AI 服务。当前版本只适配 DeepSeek Harness
-`0.1.2-alpha.1`。
+`0.1.2-alpha.2`。
 
 DSH 插件 ID 为 `llm-openai-responses-bridge`。插件通过 DSH 的插件接口工作，
 不修改 DeepSeek Harness 宿主源码。
@@ -117,7 +117,7 @@ schema，并只从副本中移除 `sandbox_permissions` 和 `justification`。
 
 ## 前置条件
 
-- DeepSeek Harness `0.1.2-alpha.1` 相关 API；
+- DeepSeek Harness `0.1.2-alpha.2` 相关 API；
 - 上游服务实现 OpenAI Responses 或 Gemini 原生 `generateContent`；
 - 从源码构建时需要 Node.js `^22.19.0` 或 `>=24.0.0`，以及 pnpm `>=10`。
 
@@ -140,7 +140,7 @@ dsh plugin --profile web add 'github:DaoCaoRenH/dsh-openai-responses-bridge#<com
 中的临时 workspace package 目录：
 
 ```powershell
-git clone --branch dsh-v0.1.2-alpha.1 https://github.com/deepseek-ai/deepseek-harness.git
+git clone --branch dsh-v0.1.2-alpha.2 https://github.com/deepseek-ai/deepseek-harness.git
 New-Item -ItemType Directory -Force deepseek-harness/packages/bridge | Out-Null
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git deepseek-harness/packages/bridge/dsh-openai-responses-bridge
 Set-Location deepseek-harness
@@ -151,7 +151,7 @@ pnpm run check
 pnpm run build
 ```
 
-源码只适配 DSH `0.1.2-alpha.1`。由于这是预发布版本，从源码构建时需要使用
+源码只适配 DSH `0.1.2-alpha.2`。由于这是预发布版本，从源码构建时需要使用
 registry 中的匹配 DSH 包，或使用匹配版本的 DSH 构建产物。本项目不支持旧的
 `0.1.1-rc.2` API。
 
@@ -254,7 +254,7 @@ API 密钥应保存在 DSH credentials 或启动环境中。不要把密钥放�
 | `file_search` | 必须提供非空 `vector_store_ids`，且上游需要支持该工具。 |
 | `code_interpreter` | 仅远端透传，不提供本地 DSH executor 或 continuation。 |
 | `mcp`、`tool_search`、`namespace` | 可以透传远端 definition，但会拒绝 definition 中的 secret。 |
-| `image_generation` | DSH `0.1.2-alpha.1` 没有安全的图片输出 backend，因此拒绝。 |
+| `image_generation` | DSH `0.1.2-alpha.2` 没有安全的图片输出 backend，因此拒绝。 |
 | `computer`、`local_shell`、`shell`、`apply_patch`、`custom` | 没有 DSH executor 和审批 continuation，因此拒绝。 |
 
 Hosted call 永远是远端调用。远端 code interpreter 或 MCP 服务不会获得本地文件系统、

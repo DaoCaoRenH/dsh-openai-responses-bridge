@@ -80,7 +80,7 @@ export function ProviderSummaryCard({
         namespace.revision,
       )
       if (!response.ok) {
-        setFailure(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
+        setFailure(response.error.code === 'settings/conflict' ? t('conflict') : response.error.message)
         return
       }
       onChanged()
@@ -123,7 +123,7 @@ export function ProviderSummaryCard({
         namespace.revision,
       )
       if (!response.ok) {
-        setDeleteFailure(response.error.code === 'settings-conflict' ? t('conflict') : response.error.message)
+        setDeleteFailure(response.error.code === 'settings/conflict' ? t('conflict') : response.error.message)
         return
       }
       setDeleteOpen(false)

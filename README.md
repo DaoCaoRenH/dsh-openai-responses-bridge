@@ -2,7 +2,7 @@
 
 An independent DeepSeek Harness plugin for connecting third-party models through
 the OpenAI Responses protocol or the native Gemini Generative AI protocol. The
-current release targets DeepSeek Harness `0.1.2-alpha.1`.
+current release targets DeepSeek Harness `0.1.2-alpha.2`.
 
 The DSH plugin id is `llm-openai-responses-bridge`. It works through DSH plugin
 interfaces and does not modify the DeepSeek Harness source tree.
@@ -139,7 +139,7 @@ policy, executor, or filesystem authority.
 
 ## Requirements
 
-- DeepSeek Harness `0.1.2-alpha.1` APIs;
+- DeepSeek Harness `0.1.2-alpha.2` APIs;
 - an upstream service implementing either OpenAI Responses or native Gemini
   `generateContent`;
 - Node.js `^22.19.0` or `>=24.0.0` and pnpm `>=10` when building from source.
@@ -164,7 +164,7 @@ For source development against the target DSH release, place the plugin in a
 temporary package directory inside a matching DSH checkout:
 
 ```powershell
-git clone --branch dsh-v0.1.2-alpha.1 https://github.com/deepseek-ai/deepseek-harness.git
+git clone --branch dsh-v0.1.2-alpha.2 https://github.com/deepseek-ai/deepseek-harness.git
 New-Item -ItemType Directory -Force deepseek-harness/packages/bridge | Out-Null
 git clone https://github.com/DaoCaoRenH/dsh-openai-responses-bridge.git deepseek-harness/packages/bridge/dsh-openai-responses-bridge
 Set-Location deepseek-harness
@@ -175,7 +175,7 @@ pnpm run check
 pnpm run build
 ```
 
-The source checkout targets DSH `0.1.2-alpha.1` only. Because this is a
+The source checkout targets DSH `0.1.2-alpha.2` only. Because this is a
 prerelease, source builds require matching DSH packages from a registry or a
 matching DSH build. The older `0.1.1-rc.2` API surface is not supported.
 
@@ -280,7 +280,7 @@ key in `settings.yaml`, `.credentials.yaml`, source files, or static headers.
 | `file_search` | Requires non-empty `vector_store_ids`; the remote endpoint must support it. |
 | `code_interpreter` | Remote passthrough only; no local DSH executor or continuation. |
 | `mcp`, `tool_search`, `namespace` | Remote definitions may pass through; secrets in definitions are rejected. |
-| `image_generation` | Refused in DSH `0.1.2-alpha.1` because no safe image output backend is available. |
+| `image_generation` | Refused in DSH `0.1.2-alpha.2` because no safe image output backend is available. |
 | `computer`, `local_shell`, `shell`, `apply_patch`, `custom` | Refused because there is no DSH executor and approval continuation for these remote tools. |
 
 Hosted calls are remote calls. A remote code interpreter or MCP service does not

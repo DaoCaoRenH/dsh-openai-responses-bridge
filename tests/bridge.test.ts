@@ -10,7 +10,7 @@ import ToolRuntime, { RUN_CODE_NAME } from '@deepseek-ai/dsh-tools'
 import type { ToolDispatchExecution, ToolExecutionResult, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { KNOWN_SESSION_EVENT_TYPES, Session, SessionId } from '@deepseek-ai/dsh-session'
-import { SettingsProvider, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { SettingsProvider } from '@deepseek-ai/dsh-settings'
 import { applyBridgeRequest } from '../src/compatibility.ts'
 import { assertServiceable, Config } from '../src/config.ts'
 import { HostedWebSearchObserver } from '../src/hosted-web-search/normalize.ts'
@@ -622,7 +622,7 @@ describe('DSH public adapter integration', () => {
     expect(ctx.llm.listProviders()).toEqual([])
 
     const settings = ctx.get('settings')!
-    const bridgeNamespace = settingsNamespace('llm-openai-responses-bridge')
+    const bridgeNamespace = 'llm-openai-responses-bridge'
     const updates: unknown[][] = []
     ctx.on('settings/updated', (...args: unknown[]) => { updates.push(args) })
     await settings.update(bridgeNamespace, {

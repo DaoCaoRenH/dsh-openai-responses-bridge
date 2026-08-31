@@ -4,12 +4,11 @@ import {
   type ToolDispatchExecution,
   type ToolExecutionResult,
   type ToolExecutionToken,
-  type JsonValue,
 } from '@deepseek-ai/dsh-tools'
 import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai'
 import type { Api, Model } from '@earendil-works/pi-ai'
 import { DEFAULT_BRIDGE_API } from './types.ts'
-import type { BridgeConfig } from './types.ts'
+import type { BridgeConfig, JsonValue } from './types.ts'
 import { hostedWebSearchEnabled } from './compatibility.ts'
 import { executeHostedWebSearch } from './hosted-web-search/executor.ts'
 

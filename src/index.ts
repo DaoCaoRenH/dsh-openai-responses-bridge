@@ -4,7 +4,7 @@ import { assertUsableApiKey, LlmError } from '@deepseek-ai/dsh-llm'
 import type { AdapterRegistrationHandle } from '@deepseek-ai/dsh-llm'
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
 import type { ResolvedPiAiProviderProfile } from '@deepseek-ai/dsh-llm-pi-ai'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-settings'
 import { credentialRef, isCredentialRefName } from '@deepseek-ai/dsh-credentials'
 import type { AuthContext, CredentialStore } from '@earendil-works/pi-ai'
 import { Config, assertServiceable } from './config.ts'
@@ -19,7 +19,7 @@ import type { BridgeConfig } from './types.ts'
 export const name = 'llm-openai-responses-bridge'
 /** The bridge needs the DSH LLM registry; settings and credentials are optional seams. */
 export const inject = ['llm']
-const NS = settingsNamespace('llm-openai-responses-bridge')
+const NS = 'llm-openai-responses-bridge'
 
 export { Config } from './config.ts'
 export { assertServiceable } from './config.ts'
@@ -136,17 +136,19 @@ export function apply(ctx: Context, config: BridgeConfig): void {
   }
 
   syncRegistrations()
-  installSettingsSection(ctx, NS, Config, config, {
-    validate: assertServiceable,
-    setSource: source => { current = source },
-    onChange: () => {
-      try {
-        syncRegistrations()
-      } catch (error: unknown) {
-        ctx.logger.error('llm-openai-responses-bridge: rejected route topology update; previous routes remain active')
-        ctx.logger.error(error)
-      }
-    },
+  ctx.inject(['settings'], (settingsCtx) => {
+    settingsCtx.settings.installSection(ctx, NS, Config, config, {
+      validate: assertServiceable,
+      setSource: source => { current = source },
+      onChange: () => {
+        try {
+          syncRegistrations()
+        } catch (error: unknown) {
+          ctx.logger.error('llm-openai-responses-bridge: rejected route topology update; previous routes remain active')
+          ctx.logger.error(error)
+        }
+      },
+    })
   })
 }
 
