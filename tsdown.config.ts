@@ -51,10 +51,11 @@ function cssModulesPlugin(id: string): Plugin {
         classMap[local] = exported.name
       }
       const tagId = `${id}/${basename(file)}`
+      const selector = `style[data-plugin-css=${JSON.stringify(tagId)}]`
       return [
         `const css = ${JSON.stringify(result.code.toString())};`,
         `const tagId = ${JSON.stringify(tagId)};`,
-        'if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=\\"" + tagId + "\\"]") === null) {',
+        `if (typeof document !== "undefined" && document.querySelector(${JSON.stringify(selector)}) === null) {`,
         '  const tag = document.createElement("style");',
         `  tag.dataset.plugin = ${JSON.stringify(id)};`,
         '  tag.dataset.pluginCss = tagId;',
